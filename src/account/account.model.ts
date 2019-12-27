@@ -25,10 +25,6 @@ export interface Account {
     password?: string;
     enabled: boolean;
     confirmedAt?: boolean;
-    confirmationToken?: string;
-    confirmationTokenExpiresOn?: number;
-    resetPasswordToken?: string;
-    resetPasswordTokenExpiresOn?: number;
     createdAt: number;
     updatedAt: number;
 }

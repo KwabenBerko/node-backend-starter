@@ -4,7 +4,9 @@ import sinonChai from "sinon-chai"
 import sinon from "sinon";
 import faker from "faker";
 import * as AccountService from "../../../src/account/account.service";
-import * as AccountRepo from "../../../src/account/account.repository"
+import * as AccountRepo from "../../../src/account/account.repository";
+import * as VerificationTokenRepo from "../../../src/account/verification-token.repository"
+import * as ResetPasswordTokenRepo from "../../../src/account/reset-password-token.repository"
 import * as MessageUtil from "../../../src/shared/util/message.util";
 import * as PasswordHasherUtil from "../../../src/shared/util/password-hasher.util"
 import { RegisterAccountDTO } from "../../../src/account/dto/register-account.dto"
@@ -15,6 +17,8 @@ import { Account, Gender, TransmissionMedium } from "../../../src/account/accoun
 import { LoginDTO } from "../../../src/account/dto/login.dto";
 import { OauthLoginDTO } from "../../../src/account/dto/oauth-login.dto";
 import { NotFoundError } from "../../../src/shared/exception/not-found.error";
+import { VerificationToken } from "../../../src/account/verification-token.model";
+import { ResetPasswordToken } from "../../../src/account/reset-password-token.model";
 
 chai.use(chaiAsPromised);
 chai.use(sinonChai)
@@ -23,7 +27,9 @@ let sandbox: SinonSandbox;
 let account: Account;
 let registerAccountDTO: Partial<RegisterAccountDTO>;
 let loginDTO: Partial<LoginDTO>;
-let oauthLoginDTO: Partial<OauthLoginDTO>
+let oauthLoginDTO: Partial<OauthLoginDTO>;
+let verificationToken: VerificationToken;
+let resetPasswordToken: ResetPasswordToken;
 
 beforeEach(() => {
     sandbox = sinon.createSandbox()
@@ -65,6 +71,20 @@ beforeEach(() => {
         firstName: faker.name.firstName(),
         lastName: faker.name.lastName(),
 
+    }
+
+    verificationToken = {
+        id: faker.random.number(5),
+        accountId: faker.random.number(3),
+        token: faker.random.uuid(),
+        expiresOn: faker.date.future().getMilliseconds()
+    }
+
+    resetPasswordToken = {
+        id: faker.random.number(2),
+        accountId: faker.random.number(4),
+        token: faker.random.uuid(),
+        expiresOn: faker.date.future().getMilliseconds()
     }
 
 })
@@ -246,24 +266,36 @@ describe("Account Service", () => {
             expect(findByIdStub).to.be.calledOnce
         })
 
+        it("should delete any existing verification token record", async () => {
+            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(verificationToken)
+            const removeVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves()
+            const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
+
+
+            await expect(AccountService.generateVerificationTokenForAccount(1, "email")).to.be.eventually.fulfilled;
+            expect(removeVerificationTokenStub).to.be.calledOnce
+            expect(addVerificationTokenStub).to.be.calledOnce
+        })
+
         it("should generate a 4 character string if the medium is sms", async() => {
-            const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(account)
-            const updateStub = sandbox.stub(AccountRepo, "update").resolves(account)
+            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined)
+            sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
+
             const data = await AccountService.generateVerificationTokenForAccount(1, "sms");
 
-            expect(findByIdStub).to.be.calledOnce
-            expect(updateStub).to.be.calledOnce
             expect(data.token.length).to.be.equal(4)
             expect(typeof data.expiresOn).to.be.equal("number")
         })
 
         it("should generate a 32 character string if the medium is email", async() => {
-            const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(account);
-            const updateStub = sandbox.stub(AccountRepo, "update").resolves(account)
+            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined)
+            sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
+
             const data = await AccountService.generateVerificationTokenForAccount(1, "email");
 
-            expect(findByIdStub).to.be.calledOnce
-            expect(updateStub).to.be.calledOnce
             expect(data.token.length).to.be.equal(32)
             expect(typeof data.expiresOn).to.be.equal("number")
         })
@@ -271,7 +303,7 @@ describe("Account Service", () => {
     })
 
 
-    describe("Generate Forgot Password Token", () => {
+    describe("Generate Reset Password Token", () => {
 
         it("should throw BadRequestError if medium is invalid", async () => {
             await expect(AccountService.generateResetPasswordTokenForAccount(1, "radio")).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_MEDIUM)
@@ -284,28 +316,44 @@ describe("Account Service", () => {
             expect(findByIdStub).to.be.calledOnce
         })
 
-        it("should generate a 4 character string if the medium is sms", async() => {
-            const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(account)
-            const updateStub = sandbox.stub(AccountRepo, "update").resolves(account)
-            const data = await AccountService.generateVerificationTokenForAccount(1, "sms");
+        it("should delete any existing reset password token record", async () => {
+            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(resetPasswordToken)
+            const removeResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "remove").resolves()
+            const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "add").resolves(verificationToken);
 
-            expect(findByIdStub).to.be.calledOnce
-            expect(updateStub).to.be.calledOnce
+
+            await expect(AccountService.generateResetPasswordTokenForAccount(1, "email")).to.be.eventually.fulfilled;
+            expect(removeResetPasswordTokenStub).to.be.calledOnce
+            expect(addResetPasswordTokenStub).to.be.calledOnce
+        })
+
+        it("should generate a 4 character string if the medium is sms", async() => {
+            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(undefined)
+            sandbox.stub(ResetPasswordTokenRepo, "add").resolves(resetPasswordToken)
+
+            const data = await AccountService.generateResetPasswordTokenForAccount(1, "sms");
+
+    
             expect(data.token.length).to.be.equal(4)
             expect(typeof data.expiresOn).to.be.equal("number")
         })
 
         it("should generate a 32 character string if the medium is email", async() => {
-            const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(account);
-            const updateStub = sandbox.stub(AccountRepo, "update").resolves(account)
-            const data = await AccountService.generateVerificationTokenForAccount(1, "email");
+            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(undefined)
+            sandbox.stub(ResetPasswordTokenRepo, "add").resolves(resetPasswordToken)
 
-            expect(findByIdStub).to.be.calledOnce
-            expect(updateStub).to.be.calledOnce
+            const data = await AccountService.generateResetPasswordTokenForAccount(1, "email");
+
             expect(data.token.length).to.be.equal(32)
             expect(typeof data.expiresOn).to.be.equal("number")
         })
 
     })
+
+    describe("Verify Account", () => {})
+    describe("Reset Password", () => {})
 
 })

@@ -3,7 +3,9 @@ import moment from "moment";
 import * as ValidationUtil from "../shared/util/validation.util";
 import * as PasswordHasherUtil from "../shared/util/password-hasher.util";
 import * as MessageUtil from "../shared/util/message.util";
-import * as AccountRepo from "./account.repository"
+import * as AccountRepo from "./account.repository";
+import * as VerificationTokenRepo from "./verification-token.repository";
+import * as ResetPasswordTokenRepo from "./reset-password-token.repository"
 import { RegisterAccountDTO } from "./dto/register-account.dto";
 import { LoginDTO } from "./dto/login.dto";
 import { OauthLoginDTO } from "./dto/oauth-login.dto";
@@ -134,21 +136,26 @@ export const generateVerificationTokenForAccount = async (accountId: number, med
         throw new NotFoundError(MessageUtil.ACCOUNT_NOT_FOUND);
     }
 
+    const verificationToken = await VerificationTokenRepo.findByAccountId(accountId);
+
+    if(verificationToken){
+        await VerificationTokenRepo.remove(verificationToken);
+    }
 
     const token = (medium == TransmissionMedium["EMAIL"])? await generateToken(32) : generateOTP(4)
 
-    const verificationToken: VerificationToken = {
+    const newVerificationToken: VerificationToken = {
         id: 0,
         accountId: account.id,
         token,
         expiresOn: moment().add(72, "hours").toDate().getMilliseconds()
     }
 
-    await AccountRepo.update(account)
+    await VerificationTokenRepo.add(newVerificationToken);
 
     return {
         token,
-        expiresOn: verificationToken.expiresOn
+        expiresOn: newVerificationToken.expiresOn
     };
 }
 
@@ -167,10 +174,14 @@ export const generateResetPasswordTokenForAccount = async (accountId: number, me
         throw new NotFoundError(MessageUtil.ACCOUNT_NOT_FOUND);
     }
 
+    const resetPasswordToken = await ResetPasswordTokenRepo.findByAccountId(accountId);
+    if(resetPasswordToken){
+        await ResetPasswordTokenRepo.remove(resetPasswordToken);
+    }
 
     const token = (medium == TransmissionMedium["EMAIL"])? await generateToken(32) : generateOTP(4)
 
-    const resetPasswordToken: ResetPasswordToken = {
+    const newResetPasswordToken: ResetPasswordToken = {
         id: 0,
         accountId: account.id,
         token,
@@ -178,15 +189,13 @@ export const generateResetPasswordTokenForAccount = async (accountId: number, me
     }
 
 
-    await AccountRepo.update(account)
+    await ResetPasswordTokenRepo.add(newResetPasswordToken)
 
     return {
         token,
-        expiresOn: resetPasswordToken.expiresOn
+        expiresOn: newResetPasswordToken.expiresOn
     };
 }
-
-
 
 
 const generateOTP = (length: number): string => {
