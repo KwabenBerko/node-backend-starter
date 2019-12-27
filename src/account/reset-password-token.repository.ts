@@ -4,6 +4,10 @@ export const findById = (id: number): Promise<ResetPasswordToken> => {
     throw new Error();
 }
 
+export const findByToken = (token: string): Promise<ResetPasswordToken> => {
+    throw new Error();
+}
+
 export const findByAccountId = (accountId: number): Promise<ResetPasswordToken> => {
     throw new Error();
 }

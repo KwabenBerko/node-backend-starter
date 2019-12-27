@@ -142,19 +142,18 @@ export const generateVerificationTokenForAccount = async (accountId: number, med
         await VerificationTokenRepo.remove(verificationToken);
     }
 
-    const token = (medium == TransmissionMedium["EMAIL"])? await generateToken(32) : generateOTP(4)
+    const token = await generateUniqueVerificationToken(medium)
 
     const newVerificationToken: VerificationToken = {
         id: 0,
         accountId: account.id,
-        token,
+        token: token,
         expiresOn: moment().add(72, "hours").toDate().getMilliseconds()
     }
 
     await VerificationTokenRepo.add(newVerificationToken);
-
     return {
-        token,
+        token: newVerificationToken.token,
         expiresOn: newVerificationToken.expiresOn
     };
 }
@@ -179,22 +178,42 @@ export const generateResetPasswordTokenForAccount = async (accountId: number, me
         await ResetPasswordTokenRepo.remove(resetPasswordToken);
     }
 
-    const token = (medium == TransmissionMedium["EMAIL"])? await generateToken(32) : generateOTP(4)
+    const token = await generateUniqueResetPasswordToken(medium);
 
     const newResetPasswordToken: ResetPasswordToken = {
         id: 0,
         accountId: account.id,
-        token,
+        token: token,
         expiresOn: moment().add(72, "hours").toDate().getMilliseconds()
     }
 
-
-    await ResetPasswordTokenRepo.add(newResetPasswordToken)
+    await ResetPasswordTokenRepo.add(newResetPasswordToken);
 
     return {
-        token,
+        token: newResetPasswordToken.token,
         expiresOn: newResetPasswordToken.expiresOn
-    };
+    }
+}
+
+
+const generateUniqueResetPasswordToken = async (medium: string): Promise<string> => {
+    const token = (medium == TransmissionMedium["EMAIL"].toLowerCase())? generateToken(32) : generateOTP(4);
+
+    if(await ResetPasswordTokenRepo.findByToken(token)){
+        return generateUniqueResetPasswordToken(medium);
+    }
+
+    return token;
+}
+
+const generateUniqueVerificationToken = async (medium: string): Promise<string> => {
+    const token = (medium == TransmissionMedium["EMAIL"].toLowerCase())? generateToken(32) : generateOTP(4);
+
+    if(await VerificationTokenRepo.findByToken(token)){
+        return generateUniqueVerificationToken(medium);
+    }
+
+    return token;
 }
 
 
