@@ -8,10 +8,6 @@ export enum OauthProvider {
     FACEBOOK = "facebook"
 }
 
-export enum TransmissionMedium {
-    EMAIL = "email",
-    SMS = "sms"
-}
 
 export interface Account {
     id: number,

@@ -13,7 +13,7 @@ import { RegisterAccountDTO } from "../../../src/account/dto/register-account.dt
 import { BadRequestError } from "../../../src/shared/exception/bad-request.error";
 import { SinonSandbox } from "sinon";
 import { ConflictError } from "../../../src/shared/exception/conflict.error";
-import { Account, Gender, TransmissionMedium } from "../../../src/account/account.model";
+import { Account, Gender } from "../../../src/account/account.model";
 import { LoginDTO } from "../../../src/account/dto/login.dto";
 import { OauthLoginDTO } from "../../../src/account/dto/oauth-login.dto";
 import { NotFoundError } from "../../../src/shared/exception/not-found.error";
@@ -255,50 +255,34 @@ describe("Account Service", () => {
 
     describe("Generate Verification Token", () => {
 
-        it("should throw BadRequestError if medium is invalid", async () => {
-            await expect(AccountService.generateVerificationTokenForAccount(1, "fax")).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_MEDIUM)
-        })
-
         it("should throw NotFoundError if account is not found", async () => {
             const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(undefined)
             
-            await expect(AccountService.generateVerificationTokenForAccount(1, "sms")).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ACCOUNT_NOT_FOUND)
+            await expect(AccountService.generateVerificationTokenForAccount(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ACCOUNT_NOT_FOUND)
             expect(findByIdStub).to.be.calledOnce
         })
 
-        it("should create a token if the medium is sms", async() => {
+        it("should create a 4 digit token ", async() => {
             sandbox.stub(AccountRepo, "findById").resolves(account)
-            sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined)
+            sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined);
+            sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
             const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
-
-            const createdToken = await AccountService.generateVerificationTokenForAccount(1, "sms");
+            const createdToken = await AccountService.generateVerificationTokenForAccount(1);
 
             expect(createdToken.token.length).to.be.equal(4);
             expect(typeof createdToken.expiresOn).to.be.equal("number");
             expect(addVerificationTokenStub).to.be.calledOnce;
         })
 
-        it("should create a 32 character token if the medium is email", async() => {
-            sandbox.stub(AccountRepo, "findById").resolves(account)
-            sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined)
-
-            const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
-
-            const createdToken = await AccountService.generateVerificationTokenForAccount(1, "email");
-
-            expect(createdToken.token.length).to.be.equal(32);
-            expect(typeof createdToken.expiresOn).to.be.equal("number");
-            expect(addVerificationTokenStub).to.be.calledOnce;
-            
-        })
 
         it("should delete any existing verification token record before creating a new one.", async () => {
             sandbox.stub(AccountRepo, "findById").resolves(account)
             sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(verificationToken)
+            sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
             const removeVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves();
             const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
 
-            await expect(AccountService.generateVerificationTokenForAccount(1, "email")).to.be.eventually.fulfilled;
+            await expect(AccountService.generateVerificationTokenForAccount(1)).to.be.eventually.fulfilled;
             expect(removeVerificationTokenStub).to.be.calledOnce
             expect(addVerificationTokenStub).to.be.calledOnce
         })
@@ -308,50 +292,38 @@ describe("Account Service", () => {
 
     describe("Generate Reset Password Token", () => {
 
-        it("should throw BadRequestError if medium is invalid", async () => {
-            await expect(AccountService.generateResetPasswordTokenForAccount(1, "radio")).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_MEDIUM)
-        })
-
         it("should throw NotFoundError if account is not found", async () => {
             const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(undefined)
             
-            await expect(AccountService.generateVerificationTokenForAccount(1, "sms")).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ACCOUNT_NOT_FOUND)
+            await expect(AccountService.generateVerificationTokenForAccount(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ACCOUNT_NOT_FOUND)
             expect(findByIdStub).to.be.calledOnce
         })
 
-        it("should create a 4 character token if the medium is sms", async() => {
+
+        it("should create a 4 digit token", async() => {
             sandbox.stub(AccountRepo, "findById").resolves(account)
             sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(undefined)
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(undefined);
             const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "add").resolves(verificationToken);
 
-            const createdToken = await AccountService.generateResetPasswordTokenForAccount(1, "sms");
+            const createdToken = await AccountService.generateResetPasswordTokenForAccount(1);
 
             expect(createdToken.token.length).to.be.equal(4);
             expect(typeof createdToken.expiresOn).to.be.equal("number");
             expect(addResetPasswordTokenStub).to.be.calledOnce;            
         })
 
-        it("should generate a 32 character token if medium is email", async() => {
-            sandbox.stub(AccountRepo, "findById").resolves(account)
-            sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(undefined)
-            const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "add").resolves(verificationToken);
-
-            const createdToken = await AccountService.generateResetPasswordTokenForAccount(1, "email");
-
-            expect(createdToken.token.length).to.be.equal(32);
-            expect(typeof createdToken.expiresOn).to.be.equal("number");
-            expect(addResetPasswordTokenStub).to.be.calledOnce;
-
-        })
 
         it("should delete any existing reset password token record before creating a new one", async () => {
             sandbox.stub(AccountRepo, "findById").resolves(account)
             sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(resetPasswordToken)
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(undefined);
+
             const removeResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "remove").resolves()
             const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "add").resolves(verificationToken);
 
 
-            await expect(AccountService.generateResetPasswordTokenForAccount(1, "email")).to.be.eventually.fulfilled;
+            await expect(AccountService.generateResetPasswordTokenForAccount(1)).to.be.eventually.fulfilled;
             expect(removeResetPasswordTokenStub).to.be.calledOnce
             expect(addResetPasswordTokenStub).to.be.calledOnce
         })

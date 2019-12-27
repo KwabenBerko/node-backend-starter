@@ -9,7 +9,7 @@ import * as ResetPasswordTokenRepo from "./reset-password-token.repository"
 import { RegisterAccountDTO } from "./dto/register-account.dto";
 import { LoginDTO } from "./dto/login.dto";
 import { OauthLoginDTO } from "./dto/oauth-login.dto";
-import { Account, Gender, OauthProvider, TransmissionMedium } from "./account.model";
+import { Account, Gender, OauthProvider } from "./account.model";
 import { BadRequestError } from "../shared/exception/bad-request.error";
 import { ConflictError } from "../shared/exception/conflict.error";
 import { NotFoundError } from "../shared/exception/not-found.error";
@@ -125,11 +125,7 @@ export const oauthLogin = async (dto: OauthLoginDTO): Promise<Account> => {
 
 }
 
-export const generateVerificationTokenForAccount = async (accountId: number, medium: string) => {
-
-    if(!medium || !ValidationUtil.isValidEnum(TransmissionMedium, medium)){
-        throw new BadRequestError(MessageUtil.INVALID_MEDIUM)
-    }
+export const generateVerificationTokenForAccount = async (accountId: number) => {
 
     const account = await AccountRepo.findById(accountId);
     if(!account){
@@ -142,13 +138,13 @@ export const generateVerificationTokenForAccount = async (accountId: number, med
         await VerificationTokenRepo.remove(verificationToken);
     }
 
-    const token = await generateUniqueVerificationToken(medium)
+    const token = await generateUniqueVerificationToken()
 
     const newVerificationToken: VerificationToken = {
         id: 0,
         accountId: account.id,
         token: token,
-        expiresOn: moment().add(72, "hours").toDate().getMilliseconds()
+        expiresOn: moment().add(2, "days").toDate().getMilliseconds()
     }
 
     await VerificationTokenRepo.add(newVerificationToken);
@@ -158,15 +154,11 @@ export const generateVerificationTokenForAccount = async (accountId: number, med
     };
 }
 
-export const verifyAccount = () => {
+export const verifyAccount = (token: string) => {
     throw new Error();
 }
 
-export const generateResetPasswordTokenForAccount = async (accountId: number, medium: string) => {
-
-    if(!medium || !ValidationUtil.isValidEnum(TransmissionMedium, medium)){
-        throw new BadRequestError(MessageUtil.INVALID_MEDIUM)
-    }
+export const generateResetPasswordTokenForAccount = async (accountId: number) => {
 
     const account = await AccountRepo.findById(accountId);
     if(!account){
@@ -178,13 +170,13 @@ export const generateResetPasswordTokenForAccount = async (accountId: number, me
         await ResetPasswordTokenRepo.remove(resetPasswordToken);
     }
 
-    const token = await generateUniqueResetPasswordToken(medium);
+    const token = await generateUniqueResetPasswordToken();
 
     const newResetPasswordToken: ResetPasswordToken = {
         id: 0,
         accountId: account.id,
         token: token,
-        expiresOn: moment().add(72, "hours").toDate().getMilliseconds()
+        expiresOn: moment().add(2, "days").toDate().getMilliseconds()
     }
 
     await ResetPasswordTokenRepo.add(newResetPasswordToken);
@@ -196,38 +188,30 @@ export const generateResetPasswordTokenForAccount = async (accountId: number, me
 }
 
 
-const generateUniqueResetPasswordToken = async (medium: string): Promise<string> => {
-    const token = (medium == TransmissionMedium["EMAIL"].toLowerCase())? generateToken(32) : generateOTP(4);
+const generateUniqueResetPasswordToken = async (): Promise<string> => {
+    const token = generateToken(4);
 
     if(await ResetPasswordTokenRepo.findByToken(token)){
-        return generateUniqueResetPasswordToken(medium);
+        return generateUniqueResetPasswordToken();
     }
 
     return token;
 }
 
-const generateUniqueVerificationToken = async (medium: string): Promise<string> => {
-    const token = (medium == TransmissionMedium["EMAIL"].toLowerCase())? generateToken(32) : generateOTP(4);
+const generateUniqueVerificationToken = async (): Promise<string> => {
+    const token = generateToken(4);
 
     if(await VerificationTokenRepo.findByToken(token)){
-        return generateUniqueVerificationToken(medium);
+        return generateUniqueVerificationToken();
     }
 
     return token;
 }
 
-
-const generateOTP = (length: number): string => {
-	return cryptoRandomString({
-        length,
-        characters: "1234567890"
-    })
-};
 
 const generateToken = (length: number): string => {
 	return cryptoRandomString({
         length,
-        type: "url-safe"
+        characters: "1234567890"
     })
-
 };

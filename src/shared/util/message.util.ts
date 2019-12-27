@@ -10,5 +10,4 @@ export const PASSWORDS_DO_NOT_MATCH = "Passwords do not match.";
 export const ACCOUNT_ALREADY_EXISTS = "An account with this email already exists."
 export const INVALID_CREDENTIALS = "Invalid Credentials."
 export const INVALID_OAUTH_PROVIDER = "Invalid Oauth Provider. Must either be 'google' or 'facebook'";
-export const INVALID_MEDIUM = "Invalid medium selected."
 export const ACCOUNT_NOT_FOUND = "Account not found.";
