@@ -20,7 +20,7 @@ export interface Account {
     phoneNumber?: string;
     password?: string;
     enabled: boolean;
-    confirmedAt?: boolean;
+    verifiedAt?: number;
     createdAt: number;
     updatedAt: number;
 }

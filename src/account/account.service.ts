@@ -22,7 +22,7 @@ const findByEmail = async (email: string): Promise<Account> => {
     return AccountRepo.findByEmail(email);
 }
 
-const buildAccount = (dto: RegisterAccountDTO | OauthLoginDTO): Account =>{
+const buildAccount = (dto: RegisterAccountDTO | OauthLoginDTO): Account => {
     return {
         id: 0, //Will be auto incremeted by repo.
         firstName: dto.firstName,
@@ -34,39 +34,39 @@ const buildAccount = (dto: RegisterAccountDTO | OauthLoginDTO): Account =>{
 }
 
 export const register = async (dto: RegisterAccountDTO): Promise<Account> => {
-    if(!(dto.firstName && dto.lastName && dto.gender && dto.email && dto.phoneNumber && dto.password && dto.confirmPassword)){
+    if (!(dto.firstName && dto.lastName && dto.gender && dto.email && dto.phoneNumber && dto.password && dto.confirmPassword)) {
         throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA);
     }
 
-    if(!ValidationUtil.isValidName(dto.firstName)){
+    if (!ValidationUtil.isValidName(dto.firstName)) {
         throw new BadRequestError(MessageUtil.INVALID_FIRST_NAME)
     }
 
-    if(!ValidationUtil.isValidName(dto.lastName)){
+    if (!ValidationUtil.isValidName(dto.lastName)) {
         throw new BadRequestError(MessageUtil.INVALID_LAST_NAME)
     }
 
-    if(dto.gender.length > 1 || !(ValidationUtil.isValidEnum(Gender, dto.gender))){
+    if (dto.gender.length > 1 || !(ValidationUtil.isValidEnum(Gender, dto.gender))) {
         throw new BadRequestError(MessageUtil.INVALID_GENDER)
     }
 
-    if(!ValidationUtil.isValidEmail(dto.email)){
+    if (!ValidationUtil.isValidEmail(dto.email)) {
         throw new BadRequestError(MessageUtil.INVALID_EMAIL_ADDRESS)
     }
 
-    if(!ValidationUtil.isValidPhoneNumber(dto.phoneNumber)){
+    if (!ValidationUtil.isValidPhoneNumber(dto.phoneNumber)) {
         throw new BadRequestError(MessageUtil.INVALID_PHONE_NUMBER)
     }
 
-    if(!ValidationUtil.isValidPassword(dto.password)){
+    if (!ValidationUtil.isValidPassword(dto.password)) {
         throw new BadRequestError(MessageUtil.INVALID_PASSWORD)
     }
 
-    if(!ValidationUtil.arePasswordsTheSame(dto.password, dto.confirmPassword)){
+    if (!ValidationUtil.arePasswordsTheSame(dto.password, dto.confirmPassword)) {
         throw new BadRequestError(MessageUtil.PASSWORDS_DO_NOT_MATCH)
     }
 
-    if(await findByEmail(dto.email)){
+    if (await findByEmail(dto.email)) {
         throw new ConflictError(MessageUtil.ACCOUNT_ALREADY_EXISTS)
     }
 
@@ -83,12 +83,12 @@ export const register = async (dto: RegisterAccountDTO): Promise<Account> => {
 }
 
 export const login = async (dto: LoginDTO): Promise<Account> => {
-    if(!(dto.email && dto.password)){
+    if (!(dto.email && dto.password)) {
         throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA)
     }
 
     const account = await findByEmail(dto.email);
-    if(!account || !await PasswordHasherUtil.comparePassword(dto.password, account.password!)){
+    if (!account || !await PasswordHasherUtil.comparePassword(dto.password, account.password!)) {
         throw new BadRequestError(MessageUtil.INVALID_CREDENTIALS)
     }
 
@@ -97,25 +97,25 @@ export const login = async (dto: LoginDTO): Promise<Account> => {
 }
 
 export const oauthLogin = async (dto: OauthLoginDTO): Promise<Account> => {
-    if(!(dto.oauthId && dto.oauthProvider && dto.firstName && dto.lastName)){
+    if (!(dto.oauthId && dto.oauthProvider && dto.firstName && dto.lastName)) {
         throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA);
     }
 
-    if(!ValidationUtil.isValidName(dto.firstName)){
+    if (!ValidationUtil.isValidName(dto.firstName)) {
         throw new BadRequestError(MessageUtil.INVALID_FIRST_NAME)
     }
 
-    if(!ValidationUtil.isValidName(dto.lastName)){
+    if (!ValidationUtil.isValidName(dto.lastName)) {
         throw new BadRequestError(MessageUtil.INVALID_LAST_NAME)
     }
 
-    if(!ValidationUtil.isValidEnum(OauthProvider, dto.oauthProvider)){
+    if (!ValidationUtil.isValidEnum(OauthProvider, dto.oauthProvider)) {
         throw new BadRequestError(MessageUtil.INVALID_OAUTH_PROVIDER)
     }
 
     let account: Account
     account = await AccountRepo.findByOauthId(dto.oauthId);
-    if(!account){
+    if (!account) {
         //New Oauth Account. Adding
         const newAccount = buildAccount(dto)
         account = await AccountRepo.add(newAccount)
@@ -128,13 +128,13 @@ export const oauthLogin = async (dto: OauthLoginDTO): Promise<Account> => {
 export const generateVerificationTokenForAccount = async (accountId: number) => {
 
     const account = await AccountRepo.findById(accountId);
-    if(!account){
+    if (!account) {
         throw new NotFoundError(MessageUtil.ACCOUNT_NOT_FOUND);
     }
 
     const verificationToken = await VerificationTokenRepo.findByAccountId(accountId);
 
-    if(verificationToken){
+    if (verificationToken) {
         await VerificationTokenRepo.remove(verificationToken);
     }
 
@@ -144,7 +144,7 @@ export const generateVerificationTokenForAccount = async (accountId: number) => 
         id: 0,
         accountId: account.id,
         token: token,
-        expiresOn: moment().add(2, "days").toDate().getMilliseconds()
+        expiresOn: moment().add(1, "hour").toDate().getMilliseconds()
     }
 
     await VerificationTokenRepo.add(newVerificationToken);
@@ -154,19 +154,31 @@ export const generateVerificationTokenForAccount = async (accountId: number) => 
     };
 }
 
-export const verifyAccount = (token: string) => {
-    throw new Error();
+export const verifyAccount = async (token: string): Promise<void> => {
+
+    const currentDateTime = moment();
+    const verificationToken = await VerificationTokenRepo.findByToken(token);
+
+    if (!verificationToken || currentDateTime.isAfter(moment(verificationToken.expiresOn))) {
+        throw new BadRequestError(MessageUtil.INVALID_VERIFICATION_TOKEN);
+    }
+
+    const account = await AccountRepo.findById(verificationToken.accountId);
+    account.verifiedAt = currentDateTime.toDate().getMilliseconds();
+
+    await VerificationTokenRepo.remove(verificationToken);
+    await AccountRepo.update(account);
 }
 
 export const generateResetPasswordTokenForAccount = async (accountId: number) => {
 
     const account = await AccountRepo.findById(accountId);
-    if(!account){
+    if (!account) {
         throw new NotFoundError(MessageUtil.ACCOUNT_NOT_FOUND);
     }
 
     const resetPasswordToken = await ResetPasswordTokenRepo.findByAccountId(accountId);
-    if(resetPasswordToken){
+    if (resetPasswordToken) {
         await ResetPasswordTokenRepo.remove(resetPasswordToken);
     }
 
@@ -176,7 +188,7 @@ export const generateResetPasswordTokenForAccount = async (accountId: number) =>
         id: 0,
         accountId: account.id,
         token: token,
-        expiresOn: moment().add(2, "days").toDate().getMilliseconds()
+        expiresOn: moment().add(30, "minutes").toDate().getMilliseconds()
     }
 
     await ResetPasswordTokenRepo.add(newResetPasswordToken);
@@ -191,7 +203,7 @@ export const generateResetPasswordTokenForAccount = async (accountId: number) =>
 const generateUniqueResetPasswordToken = async (): Promise<string> => {
     const token = generateToken(4);
 
-    if(await ResetPasswordTokenRepo.findByToken(token)){
+    if (await ResetPasswordTokenRepo.findByToken(token)) {
         return generateUniqueResetPasswordToken();
     }
 
@@ -201,7 +213,7 @@ const generateUniqueResetPasswordToken = async (): Promise<string> => {
 const generateUniqueVerificationToken = async (): Promise<string> => {
     const token = generateToken(4);
 
-    if(await VerificationTokenRepo.findByToken(token)){
+    if (await VerificationTokenRepo.findByToken(token)) {
         return generateUniqueVerificationToken();
     }
 
@@ -210,7 +222,7 @@ const generateUniqueVerificationToken = async (): Promise<string> => {
 
 
 const generateToken = (length: number): string => {
-	return cryptoRandomString({
+    return cryptoRandomString({
         length,
         characters: "1234567890"
     })

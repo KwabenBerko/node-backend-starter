@@ -16,6 +16,6 @@ export const add = (verificationToken: VerificationToken): Promise<VerificationT
     throw new Error();
 }
 
-export const remove = (verificationToken: VerificationToken): Promise<void> => {
+export const remove = (verificationToken: VerificationToken): Promise<VerificationToken> => {
     throw new Error();
 }

@@ -46,8 +46,8 @@ beforeEach(() => {
         phoneNumber: phoneNumber,
         password: password,
         enabled: true,
-        createdAt: faker.date.past().getMilliseconds(),
-        updatedAt: faker.date.recent().getMilliseconds()
+        createdAt: faker.date.past().getTime(),
+        updatedAt: faker.date.recent().getTime()
     }
 
     registerAccountDTO = {
@@ -77,14 +77,14 @@ beforeEach(() => {
         id: faker.random.number(5),
         accountId: faker.random.number(3),
         token: faker.random.uuid(),
-        expiresOn: faker.date.future().getMilliseconds()
+        expiresOn: faker.date.future().getTime()
     }
 
     resetPasswordToken = {
         id: faker.random.number(2),
         accountId: faker.random.number(4),
         token: faker.random.uuid(),
-        expiresOn: faker.date.future().getMilliseconds()
+        expiresOn: faker.date.future().getTime()
     }
 
 })
@@ -289,6 +289,43 @@ describe("Account Service", () => {
 
     })
 
+    describe("Verify Account", () => {
+        const token = String(faker.random.number({min: 4, max: 4}));
+
+        it("should throw BadRequestError if record with this token does not exist", async () => {
+            const findTokenStub = sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
+
+            await expect(AccountService.verifyAccount(token)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_VERIFICATION_TOKEN);
+            expect(findTokenStub).to.be.calledOnce;
+        })
+
+        it("should throw BadRequestError if token has expired", async () => {
+            const date = new Date();
+            date.setMinutes(date.getMinutes() - 15)
+
+            verificationToken.expiresOn = date.getTime();
+            sandbox.stub(VerificationTokenRepo, "findByToken").resolves(verificationToken);
+
+            await expect(AccountService.verifyAccount(token)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_VERIFICATION_TOKEN);
+        })
+
+        it("should verify account", async () => {
+            const date = new Date();
+            date.setMinutes(date.getMinutes() + 20);
+            
+            verificationToken.expiresOn = date.getTime();
+        
+            sandbox.stub(VerificationTokenRepo, "findByToken").resolves(verificationToken);
+            const findAccountStub = sandbox.stub(AccountRepo, "findById").resolves(account);
+            const updateAccountStub = sandbox.stub(AccountRepo, "update").resolves(account);
+            const removeTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves(verificationToken);
+
+            await expect(AccountService.verifyAccount(token)).to.be.eventually.fulfilled;
+            expect(findAccountStub).to.have.been.calledOnce;
+            expect(updateAccountStub).to.have.been.calledOnce;
+            expect(removeTokenStub).to.be.calledOnce;
+        })
+    })
 
     describe("Generate Reset Password Token", () => {
 
@@ -330,7 +367,10 @@ describe("Account Service", () => {
 
     })
 
-    describe("Verify Account", () => {})
-    describe("Reset Password", () => {})
+    describe("Reset Password", () => {
+        it("should throw BadRequestError if reset password DTO is invalid", () => {
+            
+        })
+    })
 
 })
