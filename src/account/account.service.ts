@@ -47,7 +47,7 @@ export const register = async (dto: RegisterAccountDTO): Promise<Account> => {
         throw new BadRequestError(MessageUtil.INVALID_LAST_NAME)
     }
 
-    if (dto.gender.length > 1 || !(ValidationUtil.isValidEnum(Gender, dto.gender))) {
+    if (!(ValidationUtil.isValidEnum(Gender, dto.gender))) {
         throw new BadRequestError(MessageUtil.INVALID_GENDER)
     }
 
