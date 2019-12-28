@@ -226,6 +226,8 @@ export const resetPassword = async (dto: ResetPasswordDTO): Promise<void> => {
     await AccountRepo.update(account);
 }
 
+
+
 const generateUniqueResetPasswordToken = async (): Promise<string> => {
     const token = generateToken(4);
 

@@ -1,0 +1,14 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/code 
+    docker:
+      - image: circleci/node:13.5.0  
+    steps:
+      - checkout
+      - run:
+          name: "Install Dependencies"
+          command: npm install
+      - run:
+          name: "Unit Tests"
+          command: npm test
