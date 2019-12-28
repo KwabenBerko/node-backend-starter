@@ -19,6 +19,7 @@ import { OauthLoginDTO } from "../../../src/account/dto/oauth-login.dto";
 import { NotFoundError } from "../../../src/shared/exception/not-found.error";
 import { VerificationToken } from "../../../src/account/verification-token.model";
 import { ResetPasswordToken } from "../../../src/account/reset-password-token.model";
+import { ResetPasswordDTO } from "../../../src/account/dto/reset-password.dto";
 
 chai.use(chaiAsPromised);
 chai.use(sinonChai)
@@ -28,6 +29,7 @@ let account: Account;
 let registerAccountDTO: Partial<RegisterAccountDTO>;
 let loginDTO: Partial<LoginDTO>;
 let oauthLoginDTO: Partial<OauthLoginDTO>;
+let resetPasswordDTO: Partial<ResetPasswordDTO>;
 let verificationToken: VerificationToken;
 let resetPasswordToken: ResetPasswordToken;
 
@@ -71,6 +73,12 @@ beforeEach(() => {
         firstName: faker.name.firstName(),
         lastName: faker.name.lastName(),
 
+    }
+
+    resetPasswordDTO = {
+        token: faker.random.uuid(),
+        password,
+        confirmPassword: password
     }
 
     verificationToken = {
@@ -256,10 +264,10 @@ describe("Account Service", () => {
     describe("Generate Verification Token", () => {
 
         it("should throw NotFoundError if account is not found", async () => {
-            const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(undefined)
+            const findAccountStub = sandbox.stub(AccountRepo, "findById").resolves(undefined)
             
             await expect(AccountService.generateVerificationTokenForAccount(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ACCOUNT_NOT_FOUND)
-            expect(findByIdStub).to.be.calledOnce
+            expect(findAccountStub).to.be.calledOnce
         })
 
         it("should create a 4 digit token ", async() => {
@@ -330,10 +338,10 @@ describe("Account Service", () => {
     describe("Generate Reset Password Token", () => {
 
         it("should throw NotFoundError if account is not found", async () => {
-            const findByIdStub = sandbox.stub(AccountRepo, "findById").resolves(undefined)
+            const findAccountStub = sandbox.stub(AccountRepo, "findById").resolves(undefined)
             
             await expect(AccountService.generateVerificationTokenForAccount(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ACCOUNT_NOT_FOUND)
-            expect(findByIdStub).to.be.calledOnce
+            expect(findAccountStub).to.be.calledOnce
         })
 
 
@@ -368,8 +376,54 @@ describe("Account Service", () => {
     })
 
     describe("Reset Password", () => {
-        it("should throw BadRequestError if reset password DTO is invalid", () => {
-            
+        it("should throw BadRequestError if reset password DTO is invalid", async () => {
+            resetPasswordDTO.confirmPassword = undefined;
+
+            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA);
+        })
+
+        it("should throw BadRequestError if password is invalid", async() => {
+            resetPasswordDTO.password = faker.internet.password(4);
+
+            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_PASSWORD);
+        })
+
+        it("should throw BadRequestError if password and confirm password values do not match", async () => {
+            resetPasswordDTO.password = faker.internet.password(8);
+
+            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.PASSWORDS_DO_NOT_MATCH);
+        })
+
+        it("should throw BadRequestError if token is invalid", async () => {
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(undefined);
+
+            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_RESET_PASSWORD_TOKEN);
+        })
+
+        it("should throw BadRequestError if token has expired", async () => {
+            const date = new Date();
+            date.setMinutes(date.getMinutes() - 60);
+
+            resetPasswordToken.expiresOn = date.getTime();
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(resetPasswordToken);
+
+            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_RESET_PASSWORD_TOKEN);
+        })
+
+        it("should reset password", async () => {
+            const date = new Date();
+            date.setMinutes(date.getMinutes() + 15)
+
+            resetPasswordToken.expiresOn = date.getTime();
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(resetPasswordToken);
+            const findAccountStub = sandbox.stub(AccountRepo, "findById").resolves(account);
+            const updateAccountStub = sandbox.stub(AccountRepo, "update").resolves(account);
+            const hashPasswordStub = sandbox.stub(PasswordHasherUtil, "hashPassword").resolves(faker.random.uuid());
+
+            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.fulfilled;
+            expect(findAccountStub).to.be.calledOnce;
+            expect(updateAccountStub).to.be.calledOnce;
+            expect(hashPasswordStub).to.be.calledOnce;
         })
     })
 

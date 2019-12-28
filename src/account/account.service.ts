@@ -15,6 +15,7 @@ import { ConflictError } from "../shared/exception/conflict.error";
 import { NotFoundError } from "../shared/exception/not-found.error";
 import { VerificationToken } from "./verification-token.model";
 import { ResetPasswordToken } from "./reset-password-token.model";
+import { ResetPasswordDTO } from "./dto/reset-password.dto";
 
 
 
@@ -199,6 +200,31 @@ export const generateResetPasswordTokenForAccount = async (accountId: number) =>
     }
 }
 
+export const resetPassword = async (dto: ResetPasswordDTO): Promise<void> => {
+    if(!(dto.token && dto.password && dto.confirmPassword)){
+        throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA);
+    }
+
+    if(!ValidationUtil.isValidPassword(dto.password)){
+        throw new BadRequestError(MessageUtil.INVALID_PASSWORD);
+    }
+
+    if(!ValidationUtil.arePasswordsTheSame(dto.password, dto.confirmPassword)){
+        throw new BadRequestError(MessageUtil.PASSWORDS_DO_NOT_MATCH);
+    }
+
+    const currentDateTime = moment();
+    const resetPasswordToken = await ResetPasswordTokenRepo.findByToken(dto.token);
+
+    if(!resetPasswordToken || currentDateTime.isAfter(moment(resetPasswordToken.expiresOn))){
+        throw new BadRequestError(MessageUtil.INVALID_RESET_PASSWORD_TOKEN);
+    }
+
+    const account = await AccountRepo.findById(resetPasswordToken.accountId);
+    account.password = await PasswordHasherUtil.hashPassword(dto.password);
+
+    await AccountRepo.update(account);
+}
 
 const generateUniqueResetPasswordToken = async (): Promise<string> => {
     const token = generateToken(4);
