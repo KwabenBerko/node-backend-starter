@@ -229,7 +229,7 @@ export const resetPassword = async (dto: ResetPasswordDTO): Promise<void> => {
 
 
 const generateUniqueResetPasswordToken = async (): Promise<string> => {
-    const token = generateToken(4);
+    const token = generateToken(5);
 
     if (await ResetPasswordTokenRepo.findByToken(token)) {
         return generateUniqueResetPasswordToken();
