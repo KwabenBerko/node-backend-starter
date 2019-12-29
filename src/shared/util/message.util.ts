@@ -15,3 +15,9 @@ export const ACCOUNT_DISABLED = "This account has been disabled. Kindly contact 
 export const ACCOUNT_ALREADY_VERIFIED = "This account has already been verified.";
 export const INVALID_VERIFICATION_TOKEN = "The verification is invalid or has expired.";
 export const INVALID_RESET_PASSWORD_TOKEN = "The password reset token is invalid or has expired.";
+
+
+//ROLE
+export const INVALID_PERMISSION_LENGTH = "A role must have at least one permission.";
+export const ROLE_ALREADY_EXISTS = "An role with this name already exists."
+
