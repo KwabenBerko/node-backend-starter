@@ -29,7 +29,7 @@ const buildAccount = (dto: RegisterAccountDTO | OauthLoginDTO): Account => {
         id: 0, //Will be auto incremeted by repo.
         firstName: dto.firstName,
         lastName: dto.lastName,
-        suspended: true,
+        enabled: true,
         createdAt: Date.now(),
         updatedAt: Date.now()
     }
@@ -90,10 +90,10 @@ export const login = async (dto: LoginDTO): Promise<Account> => {
     const account = await findByEmail(dto.email);
 
     if (!account || !await PasswordHasherUtil.comparePassword(dto.password, account.password!)) {
-        throw new BadRequestError(MessageUtil.INVALID_CREDENTIALS)
+        throw new UnAuthorizedError(MessageUtil.INVALID_CREDENTIALS)
     }
 
-    validateAccount(account);
+    performAccountSecurityChecks(account);
 
     return account;
 
@@ -119,7 +119,7 @@ export const oauthLogin = async (dto: OauthLoginDTO): Promise<Account> => {
     let account: Account
     account = await AccountRepo.findByOauthId(dto.oauthId);
     if(account){
-        validateAccount(account);
+        performAccountSecurityChecks(account);
     }
     else{
         //New Oauth Account. Adding
@@ -236,9 +236,9 @@ export const resetPassword = async (dto: ResetPasswordDTO): Promise<void> => {
     await AccountRepo.update(account);
 }
 
-const validateAccount = (account: Account) => {
-    if(account.suspended){
-        throw new UnAuthorizedError(MessageUtil.ACCOUNT_SUSPENDED);
+const performAccountSecurityChecks = (account: Account) => {
+    if(!account.enabled){
+        throw new UnAuthorizedError(MessageUtil.ACCOUNT_DISABLED);
     }
 }
 

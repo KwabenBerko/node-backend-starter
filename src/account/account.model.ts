@@ -19,7 +19,7 @@ export interface Account {
     email?: string;
     phoneNumber?: string;
     password?: string;
-    suspended: boolean;
+    enabled: boolean;
     verifiedAt?: number;
     createdAt: number;
     updatedAt: number;

@@ -48,7 +48,7 @@ beforeEach(() => {
         email: faker.internet.email(),
         phoneNumber: phoneNumber,
         password: password,
-        suspended: false,
+        enabled: true,
         verifiedAt: faker.date.past().getTime(),
         createdAt: faker.date.past().getTime(),
         updatedAt: faker.date.recent().getTime()
@@ -186,19 +186,19 @@ describe("Account Service", () => {
             await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
         })
 
-        it("should throw BadRequestError if account does not exist", async () => {
+        it("should throw UnAuthorizedError if account does not exist", async () => {
             const findByEmailStub = sandbox.stub(AccountRepo, "findByEmail").resolves(undefined)
 
-            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_CREDENTIALS)
+            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
             expect(findByEmailStub).to.be.calledOnce
         })
 
 
-        it("should throw BadRequestError if credentials is invalid", async () => {
+        it("should throw UnAuthorizedError if credentials is invalid", async () => {
             const findByEmailStub = sandbox.stub(AccountRepo, "findByEmail").resolves(account)
             const comparePasswordStub = sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(false);
 
-            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_CREDENTIALS)
+            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
             expect(findByEmailStub).to.be.calledOnce
             expect(comparePasswordStub).to.be.calledOnce
         })
@@ -214,13 +214,13 @@ describe("Account Service", () => {
             expect(await promise).to.be.equal(account)
         })
 
-        it("should throw UnAuthorizedError if account is suspended", async () => {
-            account.suspended = true;
+        it("should throw UnAuthorizedError if account is disabled", async () => {
+            account.enabled = false;
 
             sandbox.stub(AccountRepo, "findByEmail").resolves(account);
             sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
 
-            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_SUSPENDED)
+            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_DISABLED)
         })
     })
 
@@ -272,12 +272,12 @@ describe("Account Service", () => {
             expect(insertAccountStub).to.not.be.called
         })
 
-        it("should throw UnAuthorizedError if account is suspended", async () => {
-            account.suspended = true;
+        it("should throw UnAuthorizedError if account is disabled", async () => {
+            account.enabled = false;
 
             const findByOauthIdStub = sandbox.stub(AccountRepo, "findByOauthId").resolves(account)
 
-            await expect(AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_SUSPENDED)
+            await expect(AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_DISABLED)
             expect(findByOauthIdStub).to.be.calledOnce;
         })
     })
