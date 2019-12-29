@@ -1,5 +1,5 @@
 import { HubtelSms } from "hubtel-sms";
-import { BadRequestError } from "../exception/bad-request.error"
+import { BadRequestError } from "../errors/bad-request.error"
 import * as ValidationUtil from "./validation.util";
 import * as MessageUtil from "./message.util";
 

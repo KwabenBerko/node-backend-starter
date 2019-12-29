@@ -10,12 +10,13 @@ import { RegisterAccountDTO } from "./dto/register-account.dto";
 import { LoginDTO } from "./dto/login.dto";
 import { OauthLoginDTO } from "./dto/oauth-login.dto";
 import { Account, Gender, OauthProvider } from "./account.model";
-import { BadRequestError } from "../shared/exception/bad-request.error";
-import { ConflictError } from "../shared/exception/conflict.error";
-import { NotFoundError } from "../shared/exception/not-found.error";
+import { BadRequestError } from "../shared/errors/bad-request.error";
+import { ConflictError } from "../shared/errors/conflict.error";
+import { NotFoundError } from "../shared/errors/not-found.error";
 import { VerificationToken } from "./verification-token.model";
 import { ResetPasswordToken } from "./reset-password-token.model";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
+import { UnAuthorizedError } from "../shared/errors/unauthorized.error";
 
 
 
@@ -28,7 +29,7 @@ const buildAccount = (dto: RegisterAccountDTO | OauthLoginDTO): Account => {
         id: 0, //Will be auto incremeted by repo.
         firstName: dto.firstName,
         lastName: dto.lastName,
-        enabled: true,
+        suspended: true,
         createdAt: Date.now(),
         updatedAt: Date.now()
     }
@@ -77,10 +78,8 @@ export const register = async (dto: RegisterAccountDTO): Promise<Account> => {
     newAccount.phoneNumber = dto.phoneNumber;
     newAccount.password = await PasswordHasherUtil.hashPassword(dto.password);
 
-    const account = await AccountRepo.add(newAccount);
+    return await AccountRepo.add(newAccount);
 
-
-    return account
 }
 
 export const login = async (dto: LoginDTO): Promise<Account> => {
@@ -89,9 +88,12 @@ export const login = async (dto: LoginDTO): Promise<Account> => {
     }
 
     const account = await findByEmail(dto.email);
+
     if (!account || !await PasswordHasherUtil.comparePassword(dto.password, account.password!)) {
         throw new BadRequestError(MessageUtil.INVALID_CREDENTIALS)
     }
+
+    validateAccount(account);
 
     return account;
 
@@ -116,7 +118,10 @@ export const oauthLogin = async (dto: OauthLoginDTO): Promise<Account> => {
 
     let account: Account
     account = await AccountRepo.findByOauthId(dto.oauthId);
-    if (!account) {
+    if(account){
+        validateAccount(account);
+    }
+    else{
         //New Oauth Account. Adding
         const newAccount = buildAccount(dto)
         account = await AccountRepo.add(newAccount)
@@ -131,6 +136,10 @@ export const generateVerificationTokenForAccount = async (accountId: number) => 
     const account = await AccountRepo.findById(accountId);
     if (!account) {
         throw new NotFoundError(MessageUtil.ACCOUNT_NOT_FOUND);
+    }
+
+    if(account.verifiedAt){
+        throw new ConflictError(MessageUtil.ACCOUNT_ALREADY_VERIFIED);
     }
 
     const verificationToken = await VerificationTokenRepo.findByAccountId(accountId);
@@ -149,6 +158,7 @@ export const generateVerificationTokenForAccount = async (accountId: number) => 
     }
 
     await VerificationTokenRepo.add(newVerificationToken);
+
     return {
         token: newVerificationToken.token,
         expiresOn: newVerificationToken.expiresOn
@@ -226,7 +236,11 @@ export const resetPassword = async (dto: ResetPasswordDTO): Promise<void> => {
     await AccountRepo.update(account);
 }
 
-
+const validateAccount = (account: Account) => {
+    if(account.suspended){
+        throw new UnAuthorizedError(MessageUtil.ACCOUNT_SUSPENDED);
+    }
+}
 
 const generateUniqueResetPasswordToken = async (): Promise<string> => {
     const token = generateToken(4);
