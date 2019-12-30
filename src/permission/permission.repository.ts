@@ -1,7 +1,11 @@
-export const findAll = () => {
-    throw new Error();
-}
+import { Permission } from "./permission.model";
 
-export const findById = () => {
-    throw new Error();
+export namespace PermissionRepo {
+    export const findAll = (): Promise<Permission[]> => {
+        throw new Error();
+    }
+    
+    export const findById = (id: number): Promise<Permission> => {
+        throw new Error();
+    }
 }

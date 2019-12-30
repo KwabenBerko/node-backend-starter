@@ -1,17 +1,12 @@
-import chai, { expect } from "chai";
-import chaiAsPromised from "chai-as-promised";
-import sinonChai from "sinon-chai"
-import sinon from "sinon";
-import faker from "faker";
-import * as AccountService from "../../../src/account/account.service";
-import * as AccountRepo from "../../../src/account/account.repository";
-import * as VerificationTokenRepo from "../../../src/account/verification-token.repository"
-import * as ResetPasswordTokenRepo from "../../../src/account/reset-password-token.repository"
-import * as MessageUtil from "../../../src/shared/util/message.util";
-import * as PasswordHasherUtil from "../../../src/shared/util/password-hasher.util"
+import {sandbox, faker, expect} from "./setup";
+import { AccountService } from "../../../src/account/account.service";
+import { AccountRepo } from "../../../src/account/account.repository";
+import { VerificationTokenRepo } from "../../../src/account/verification-token.repository"
+import { ResetPasswordTokenRepo } from "../../../src/account/reset-password-token.repository"
+import { MessageUtil } from "../../../src/shared/util/message.util";
+import { PasswordHasherUtil } from "../../../src/shared/util/password-hasher.util"
 import { RegisterAccountDTO } from "../../../src/account/dto/register-account.dto"
 import { BadRequestError } from "../../../src/shared/errors/bad-request.error";
-import { SinonSandbox } from "sinon";
 import { ConflictError } from "../../../src/shared/errors/conflict.error";
 import { Account, Gender } from "../../../src/account/account.model";
 import { LoginDTO } from "../../../src/account/dto/login.dto";
@@ -22,10 +17,7 @@ import { ResetPasswordToken } from "../../../src/account/reset-password-token.mo
 import { ResetPasswordDTO } from "../../../src/account/dto/reset-password.dto";
 import { UnAuthorizedError } from "../../../src/shared/errors/unauthorized.error";
 
-chai.use(chaiAsPromised);
-chai.use(sinonChai)
 
-let sandbox: SinonSandbox;
 let account: Account;
 let registerAccountDTO: Partial<RegisterAccountDTO>;
 let loginDTO: Partial<LoginDTO>;
@@ -35,7 +27,6 @@ let verificationToken: VerificationToken;
 let resetPasswordToken: ResetPasswordToken;
 
 beforeEach(() => {
-    sandbox = sinon.createSandbox()
     const password = faker.internet.password();
     const phoneNumber = faker.phone.phoneNumber("+233#########");
 
@@ -99,9 +90,6 @@ beforeEach(() => {
 
 })
 
-afterEach(() => {
-    sandbox.restore()
-})
 
 describe("Account Service", () => {
     describe("Register With Email", () => {
