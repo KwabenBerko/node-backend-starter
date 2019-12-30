@@ -17,6 +17,7 @@ import { VerificationToken } from "./verification-token.model";
 import { ResetPasswordToken } from "./reset-password-token.model";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 import { UnAuthorizedError } from "../shared/errors/unauthorized.error";
+import { ForbiddenError } from "../shared/errors/forbidden.error";
 
 
 
@@ -30,8 +31,9 @@ const buildAccount = (dto: RegisterAccountDTO | OauthLoginDTO): Account => {
         firstName: dto.firstName,
         lastName: dto.lastName,
         enabled: true,
+        roles: [],
         createdAt: Date.now(),
-        updatedAt: Date.now()
+        modifiedAt: Date.now()
     }
 }
 
@@ -68,6 +70,12 @@ export namespace AccountService {
         if (!ValidationUtil.arePasswordsTheSame(dto.password, dto.confirmPassword)) {
             throw new BadRequestError(MessageUtil.PASSWORDS_DO_NOT_MATCH)
         }
+
+        // if(dto.roleIds){
+        //     if(dto.roleIds.length < 1){
+
+        //     }
+        // }
     
         if (await findByEmail(dto.email)) {
             throw new ConflictError(MessageUtil.ACCOUNT_ALREADY_EXISTS)
@@ -124,7 +132,8 @@ export namespace AccountService {
         }
         else{
             //New Oauth Account. Adding
-            const newAccount = buildAccount(dto)
+            const newAccount = buildAccount(dto);
+            newAccount.verifiedAt = Date.now();
             account = await AccountRepo.add(newAccount)
         }
     
@@ -236,11 +245,32 @@ export namespace AccountService {
     
         await AccountRepo.update(account);
     }
+
+    export const checkPermission = async (permission: string, account: Account): Promise<void> => {
+        if(!account || !account.roles.length){
+            throw new ForbiddenError(MessageUtil.PERMISSION_DENIED);
+        }
+
+        let accountPermissions: string[] = [];
+        for(let i = 0; i < account.roles.length; i++){
+            account.roles[i].permissions.forEach(permission => {
+                accountPermissions.push(permission.name);
+            });    
+        }
+        
+        if(!new Set([...accountPermissions]).has(permission)){
+            throw new ForbiddenError(MessageUtil.PERMISSION_DENIED);
+        }
+    }
 }
 
 const performAccountSecurityChecks = (account: Account) => {
     if(!account.enabled){
         throw new UnAuthorizedError(MessageUtil.ACCOUNT_DISABLED);
+    }
+
+    if(!account.verifiedAt){
+        throw new UnAuthorizedError(MessageUtil.ACCOUNT_NOT_VERIFIED);
     }
 }
 

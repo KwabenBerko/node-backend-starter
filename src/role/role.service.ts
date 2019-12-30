@@ -6,15 +6,17 @@ import { PermissionRepo } from "../permission/permission.repository";
 import { MessageUtil } from "../shared/util/message.util";
 import { ConflictError } from "../shared/errors/conflict.error";
 import { NotFoundError } from "../shared/errors/not-found.error";
+import { Account } from "../account/account.model";
 
 export namespace RoleService {
-    export const add = async (dto: CreateRoleDTO):Promise<Role> => {
+
+    export const add = async (dto: CreateRoleDTO, account: Account):Promise<Role> => {
         if(!(dto.name && dto.permissionIds)){
             throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA);
         }
     
         if(dto.permissionIds.length < 1){
-            throw new BadRequestError(MessageUtil.INVALID_PERMISSION_LENGTH);
+            throw new BadRequestError(MessageUtil.INVALID_PERMISSIONS_LENGTH);
         }
     
         const role = await RoleRepo.findByName(dto.name);
@@ -22,13 +24,16 @@ export namespace RoleService {
             throw new ConflictError(MessageUtil.ROLE_ALREADY_EXISTS);
         }
     
-        dto.permissionIds.map(async permissionId => {
-            const permission = await PermissionRepo.findById(permissionId);
-            if(!permission){
-                throw new NotFoundError(MessageUtil.PERMISSION_NOT_FOUND);
-            }
-        })
-    
-        throw new Error();
+        await Promise.all(
+            dto.permissionIds.map(async permissionId => {
+                const permission = await PermissionRepo.findById(permissionId);
+                if(!permission){
+                    throw new NotFoundError(MessageUtil.PERMISSION_NOT_FOUND);
+                }
+            })
+        )
+
+       throw new Error();
+        
     }
 }

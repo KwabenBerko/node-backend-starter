@@ -1,4 +1,5 @@
-import {sandbox, faker, expect} from "./setup";
+import { sandbox, expect } from "../setup";
+import { faker, account, registerAccountDTO, loginDTO, oauthLoginDTO, resetPasswordDTO, resetPasswordToken, verificationToken, role, permission } from "../data.factory";
 import { AccountService } from "../../../src/account/account.service";
 import { AccountRepo } from "../../../src/account/account.repository";
 import { VerificationTokenRepo } from "../../../src/account/verification-token.repository"
@@ -8,148 +9,71 @@ import { PasswordHasherUtil } from "../../../src/shared/util/password-hasher.uti
 import { RegisterAccountDTO } from "../../../src/account/dto/register-account.dto"
 import { BadRequestError } from "../../../src/shared/errors/bad-request.error";
 import { ConflictError } from "../../../src/shared/errors/conflict.error";
-import { Account, Gender } from "../../../src/account/account.model";
 import { LoginDTO } from "../../../src/account/dto/login.dto";
 import { OauthLoginDTO } from "../../../src/account/dto/oauth-login.dto";
 import { NotFoundError } from "../../../src/shared/errors/not-found.error";
-import { VerificationToken } from "../../../src/account/verification-token.model";
-import { ResetPasswordToken } from "../../../src/account/reset-password-token.model";
 import { ResetPasswordDTO } from "../../../src/account/dto/reset-password.dto";
 import { UnAuthorizedError } from "../../../src/shared/errors/unauthorized.error";
-
-
-let account: Account;
-let registerAccountDTO: Partial<RegisterAccountDTO>;
-let loginDTO: Partial<LoginDTO>;
-let oauthLoginDTO: Partial<OauthLoginDTO>;
-let resetPasswordDTO: Partial<ResetPasswordDTO>;
-let verificationToken: VerificationToken;
-let resetPasswordToken: ResetPasswordToken;
-
-beforeEach(() => {
-    const password = faker.internet.password();
-    const phoneNumber = faker.phone.phoneNumber("+233#########");
-
-
-    account = {
-        id: faker.random.number(50),
-        firstName: faker.name.firstName(),
-        lastName: faker.name.lastName(),
-        gender: Gender["F"],
-        email: faker.internet.email(),
-        phoneNumber: phoneNumber,
-        password: password,
-        enabled: true,
-        verifiedAt: faker.date.past().getTime(),
-        createdAt: faker.date.past().getTime(),
-        updatedAt: faker.date.recent().getTime()
-    }
-
-    registerAccountDTO = {
-        firstName: faker.name.firstName(),
-        lastName: faker.name.lastName(),
-        gender: faker.random.arrayElement(["m", "f"]),
-        email: faker.internet.email(),
-        phoneNumber: phoneNumber,
-        password: password,
-        confirmPassword: password
-    }
-
-    loginDTO = {
-        email: faker.internet.email(),
-        password: password
-    }
-
-    oauthLoginDTO = {
-        oauthId: faker.random.uuid(),
-        oauthProvider: faker.random.arrayElement(["google", "facebook"]),
-        firstName: faker.name.firstName(),
-        lastName: faker.name.lastName(),
-
-    }
-
-    resetPasswordDTO = {
-        token: faker.random.uuid(),
-        password,
-        confirmPassword: password
-    }
-
-    verificationToken = {
-        id: faker.random.number(5),
-        accountId: faker.random.number(3),
-        token: faker.random.uuid(),
-        expiresOn: faker.date.future().getTime()
-    }
-
-    resetPasswordToken = {
-        id: faker.random.number(2),
-        accountId: faker.random.number(4),
-        token: faker.random.uuid(),
-        expiresOn: faker.date.future().getTime()
-    }
-
-})
+import { ForbiddenError } from "../../../src/shared/errors/forbidden.error";
 
 
 describe("Account Service", () => {
     describe("Register With Email", () => {
         it("should throw BadRequestError if register DTO object is invalid", async () => {
 
-            registerAccountDTO.email = undefined
-            registerAccountDTO.password = undefined
-            registerAccountDTO.confirmPassword = undefined
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, email: undefined, password: undefined, confirmPassword: undefined };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
         })
 
         it("should throw BadRequestError if firstName is invalid", async () => {
-            registerAccountDTO.firstName = faker.internet.ipv6()
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, firstName: faker.internet.ipv6() };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_FIRST_NAME)
+
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_FIRST_NAME)
         })
 
         it("should throw BadRequestError if lastName is invalid", async () => {
-            registerAccountDTO.lastName = faker.phone.phoneNumber()
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, lastName: faker.phone.phoneNumber() };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_LAST_NAME)
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_LAST_NAME)
         })
 
         it("should throw BadRequestError if gender is invalid", async () => {
-            registerAccountDTO.gender = "r"
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, gender: "r" };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_GENDER)
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_GENDER)
         })
 
         it("should throw BadRequestError if email is invalid", async () => {
-            registerAccountDTO.email = faker.lorem.lines(1)
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, email: faker.lorem.lines(1) };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_EMAIL_ADDRESS)
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_EMAIL_ADDRESS)
         })
 
         it("should throw BadRequestError if phone number is invalid", async () => {
-            registerAccountDTO.phoneNumber = "76112209"
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, phoneNumber: "76112209" };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_PHONE_NUMBER)
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_PHONE_NUMBER)
         })
 
         it("should throw BadRequestError if password is invalid", async () => {
-            registerAccountDTO.password = "pass"
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, password: "pass" };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_PASSWORD)
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_PASSWORD)
         })
 
         it("should throw BadRequestError if password and confirmPassword are not equal", async () => {
-            registerAccountDTO.password = "password"
-            registerAccountDTO.confirmPassword = "pass"
+            const dto: Partial<RegisterAccountDTO> = { ...registerAccountDTO, password: "passwo", confirmPassword: "password" };
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.PASSWORDS_DO_NOT_MATCH)
+            await expect(AccountService.register(dto as RegisterAccountDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.PASSWORDS_DO_NOT_MATCH)
         })
 
         it("should throw ConflictError if account already exists", async () => {
 
             const findByEmailStub = sandbox.stub(AccountRepo, "findByEmail").resolves(account)
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO)).to.be.eventually.rejectedWith(ConflictError, MessageUtil.ACCOUNT_ALREADY_EXISTS)
+            await expect(AccountService.register(registerAccountDTO)).to.be.eventually.rejectedWith(ConflictError, MessageUtil.ACCOUNT_ALREADY_EXISTS)
             expect(findByEmailStub).to.be.calledOnce
         })
 
@@ -158,10 +82,11 @@ describe("Account Service", () => {
             const hashPasswordStub = sandbox.stub(PasswordHasherUtil, "hashPassword").resolves(faker.random.uuid())
             const insertAccountStub = sandbox.stub(AccountRepo, "add").resolves(account)
 
-            await expect(AccountService.register(registerAccountDTO as RegisterAccountDTO))
+            await expect(AccountService.register(registerAccountDTO))
                 .to.be.eventually.fulfilled;
-            expect(findByEmailStub).to.be.calledOnce
-            expect(insertAccountStub).to.be.calledOnce
+            expect(findByEmailStub).to.be.calledOnce;
+            expect(hashPasswordStub).to.be.calledOnce;
+            expect(insertAccountStub).to.be.calledOnce;
         })
 
     })
@@ -169,15 +94,15 @@ describe("Account Service", () => {
 
     describe("Login With Email", () => {
         it("should throw BadRequestError if login DTO object is invalid", async () => {
-            loginDTO.email = undefined
+            const dto: Partial<LoginDTO> = { ...loginDTO, email: undefined };
 
-            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
+            await expect(AccountService.login(dto as LoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
         })
 
         it("should throw UnAuthorizedError if account does not exist", async () => {
             const findByEmailStub = sandbox.stub(AccountRepo, "findByEmail").resolves(undefined)
 
-            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
+            await expect(AccountService.login(loginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
             expect(findByEmailStub).to.be.calledOnce
         })
 
@@ -186,7 +111,7 @@ describe("Account Service", () => {
             const findByEmailStub = sandbox.stub(AccountRepo, "findByEmail").resolves(account)
             const comparePasswordStub = sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(false);
 
-            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
+            await expect(AccountService.login(loginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
             expect(findByEmailStub).to.be.calledOnce
             expect(comparePasswordStub).to.be.calledOnce
         })
@@ -195,7 +120,7 @@ describe("Account Service", () => {
             const findByEmailStub = sandbox.stub(AccountRepo, "findByEmail").resolves(account)
             const comparePasswordStub = sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
 
-            const promise = AccountService.login(loginDTO as LoginDTO);
+            const promise = AccountService.login(loginDTO);
             await expect(promise).to.be.eventually.fulfilled
             expect(findByEmailStub).to.be.calledOnce
             expect(comparePasswordStub).to.be.calledOnce
@@ -203,45 +128,50 @@ describe("Account Service", () => {
         })
 
         it("should throw UnAuthorizedError if account is disabled", async () => {
-            account.enabled = false;
-
-            sandbox.stub(AccountRepo, "findByEmail").resolves(account);
+            sandbox.stub(AccountRepo, "findByEmail").resolves({ ...account, enabled: false });
             sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
 
-            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_DISABLED)
+            await expect(AccountService.login(loginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_DISABLED)
+        })
+
+        it("should throw UnAuthorizedError if account has not been verified", async () => {
+            sandbox.stub(AccountRepo, "findByEmail").resolves({ ...account, verifiedAt: undefined });
+            sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
+
+            await expect(AccountService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_NOT_VERIFIED)
         })
     })
 
     describe("Oauth Login", () => {
         it("should throw BadRequestError if oauth login DTO object is invalid", async () => {
-            oauthLoginDTO.oauthId = undefined
+            const dto: Partial<OauthLoginDTO> = { ...oauthLoginDTO, oauthId: undefined };
 
-            await expect(AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
+            await expect(AccountService.oauthLogin(dto as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
         })
 
         it("should throw BadRequestError if firstName is invalid", async () => {
-            oauthLoginDTO.firstName = faker.internet.ipv6()
+            const dto: Partial<OauthLoginDTO> = { ...oauthLoginDTO, firstName: faker.internet.ipv6() };
 
-            await expect(AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_FIRST_NAME)
+            await expect(AccountService.oauthLogin(dto as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_FIRST_NAME)
         })
 
         it("should throw BadRequestError if lastName is invalid", async () => {
-            oauthLoginDTO.lastName = faker.internet.ip()
+            const dto: Partial<OauthLoginDTO> = { ...oauthLoginDTO, lastName: faker.internet.ip() }
 
-            await expect(AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_LAST_NAME)
+            await expect(AccountService.oauthLogin(dto as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_LAST_NAME)
         })
 
         it("should throw BadRequestError if oauth provider is invalid", async () => {
-            oauthLoginDTO.oauthProvider = "microsoft"
+            const dto: Partial<OauthLoginDTO> = { ...oauthLoginDTO, oauthProvider: "microsoft" };
 
-            await expect(AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_OAUTH_PROVIDER)
+            await expect(AccountService.oauthLogin(dto as OauthLoginDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_OAUTH_PROVIDER)
         })
 
         it("should create account and login if the oauthId does not exist", async () => {
             const findByOauthIdStub = sandbox.stub(AccountRepo, "findByOauthId").resolves(undefined)
             const insertAccountStub = sandbox.stub(AccountRepo, "add").resolves(account)
 
-            const promise = AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)
+            const promise = AccountService.oauthLogin(oauthLoginDTO)
             await expect(promise).to.be.fulfilled
             expect(await promise).to.be.equal(account)
             expect(findByOauthIdStub).to.be.calledOnce
@@ -253,7 +183,7 @@ describe("Account Service", () => {
             const insertAccountStub = sandbox.stub(AccountRepo, "add").resolves(account)
 
 
-            const promise = AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)
+            const promise = AccountService.oauthLogin(oauthLoginDTO)
             await expect(promise).to.be.fulfilled
             expect(await promise).to.be.equal(account)
             expect(findByOauthIdStub).to.be.calledOnce
@@ -261,9 +191,7 @@ describe("Account Service", () => {
         })
 
         it("should throw UnAuthorizedError if account is disabled", async () => {
-            account.enabled = false;
-
-            const findByOauthIdStub = sandbox.stub(AccountRepo, "findByOauthId").resolves(account)
+            const findByOauthIdStub = sandbox.stub(AccountRepo, "findByOauthId").resolves({ ...account, enabled: false });
 
             await expect(AccountService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.ACCOUNT_DISABLED)
             expect(findByOauthIdStub).to.be.calledOnce;
@@ -274,7 +202,6 @@ describe("Account Service", () => {
 
         it("should throw NotFoundError if account is not found", async () => {
             const findAccountStub = sandbox.stub(AccountRepo, "findById").resolves(undefined);
-
 
             await expect(AccountService.generateVerificationTokenForAccount(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ACCOUNT_NOT_FOUND)
             expect(findAccountStub).to.be.calledOnce
@@ -288,9 +215,7 @@ describe("Account Service", () => {
         })
 
         it("should create a 4 digit verification token ", async () => {
-            account.verifiedAt = undefined;
-
-            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(AccountRepo, "findById").resolves({ ...account, verifiedAt: undefined })
             sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined);
             sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
             const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
@@ -302,9 +227,7 @@ describe("Account Service", () => {
         })
 
         it("should generate a unique verification token", async () => {
-            account.verifiedAt = undefined;
-
-            sandbox.stub(AccountRepo, "findById").resolves(account);
+            sandbox.stub(AccountRepo, "findById").resolves({ ...account, verifiedAt: undefined });
             sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined);
             sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
             const findTokenStub = sandbox.stub(VerificationTokenRepo, "findByToken")
@@ -316,9 +239,7 @@ describe("Account Service", () => {
         })
 
         it("should delete any existing verification token record before creating a new one.", async () => {
-            account.verifiedAt = undefined;
-
-            sandbox.stub(AccountRepo, "findById").resolves(account)
+            sandbox.stub(AccountRepo, "findById").resolves({ ...account, verifiedAt: undefined })
             sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(verificationToken)
             sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
             const removeVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves();
@@ -345,8 +266,9 @@ describe("Account Service", () => {
             const date = new Date();
             date.setMinutes(date.getMinutes() - 15)
 
-            verificationToken.expiresOn = date.getTime();
-            sandbox.stub(VerificationTokenRepo, "findByToken").resolves(verificationToken);
+            sandbox.stub(VerificationTokenRepo, "findByToken").resolves({
+                ...verificationToken, expiresOn: date.getTime()
+            });
 
             await expect(AccountService.verifyAccount(token)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_VERIFICATION_TOKEN);
         })
@@ -355,9 +277,10 @@ describe("Account Service", () => {
             const date = new Date();
             date.setMinutes(date.getMinutes() + 20);
 
-            verificationToken.expiresOn = date.getTime();
+            sandbox.stub(VerificationTokenRepo, "findByToken").resolves({
+                ...verificationToken, expiresOn: date.getTime()
+            });
 
-            sandbox.stub(VerificationTokenRepo, "findByToken").resolves(verificationToken);
             const findAccountStub = sandbox.stub(AccountRepo, "findById").resolves(account);
             const updateAccountStub = sandbox.stub(AccountRepo, "update").resolves(account);
             const removeTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves(verificationToken);
@@ -422,21 +345,21 @@ describe("Account Service", () => {
 
     describe("Reset Password", () => {
         it("should throw BadRequestError if reset password DTO is invalid", async () => {
-            resetPasswordDTO.confirmPassword = undefined;
+            const dto: Partial<ResetPasswordDTO> = { ...resetPasswordDTO, confirmPassword: undefined }
 
-            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA);
+            await expect(AccountService.resetPassword(dto as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA);
         })
 
         it("should throw BadRequestError if password is invalid", async () => {
-            resetPasswordDTO.password = faker.internet.password(4);
+            const dto: Partial<ResetPasswordDTO> = { ...resetPasswordDTO, password: faker.internet.password(4) }
 
-            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_PASSWORD);
+            await expect(AccountService.resetPassword(dto as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_PASSWORD);
         })
 
         it("should throw BadRequestError if password and confirm password values do not match", async () => {
-            resetPasswordDTO.password = faker.internet.password(8);
+            const dto: Partial<ResetPasswordDTO> = { ...resetPasswordDTO, password: faker.internet.password(9) }
 
-            await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.PASSWORDS_DO_NOT_MATCH);
+            await expect(AccountService.resetPassword(dto as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.PASSWORDS_DO_NOT_MATCH);
         })
 
         it("should throw BadRequestError if token is invalid", async () => {
@@ -449,8 +372,7 @@ describe("Account Service", () => {
             const date = new Date();
             date.setMinutes(date.getMinutes() - 60);
 
-            resetPasswordToken.expiresOn = date.getTime();
-            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(resetPasswordToken);
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves({ ...resetPasswordToken, expiresOn: date.getTime() });
 
             await expect(AccountService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_RESET_PASSWORD_TOKEN);
         })
@@ -459,8 +381,8 @@ describe("Account Service", () => {
             const date = new Date();
             date.setMinutes(date.getMinutes() + 15)
 
-            resetPasswordToken.expiresOn = date.getTime();
-            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(resetPasswordToken);
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves({ ...resetPasswordToken, expiresOn: date.getTime() });
+
             const findAccountStub = sandbox.stub(AccountRepo, "findById").resolves(account);
             const updateAccountStub = sandbox.stub(AccountRepo, "update").resolves(account);
             const hashPasswordStub = sandbox.stub(PasswordHasherUtil, "hashPassword").resolves(faker.random.uuid());
@@ -472,4 +394,34 @@ describe("Account Service", () => {
         })
     })
 
+    describe("Check Permissions", () => {
+        it("should throw ForbiddenError if roles length is less than 1", async () => {
+
+            expect(AccountService.checkPermission("", { ...account, roles: [] })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+
+        })
+
+        it("should throw ForbiddenError if account does not have permission", async () => {
+            const permissionName = "ACCESS_DASHBOARD";
+
+            expect(AccountService.checkPermission(permissionName, { ...account, roles: [role] })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+
+        })
+
+        it("should resolve if account has permission", async () => {
+            const permissionName = "ACCESS_DASHBOARD";
+
+            expect(AccountService.checkPermission(permissionName, {
+                ...account,
+                roles: [
+                    {
+                        ...role, permissions: [
+                            { ...permission, name: permissionName }
+                        ]
+                    }
+                ]
+            })).to.be.eventually.fulfilled;
+
+        })
+    })
 })
