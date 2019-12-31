@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha -r ts-node/register ./test/**/*.spec.ts"
+    "test": "mocha -r ts-node/register ./test/**/*.spec.ts",
+    "test:coverage": "nyc npm test"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +23,7 @@
     "chai-as-promised": "^7.1.1",
     "faker": "^4.1.0",
     "mocha": "^6.2.2",
+    "nyc": "^15.0.0",
     "sinon": "^8.0.1",
     "sinon-chai": "^3.4.0",
     "ts-node": "^8.5.4",

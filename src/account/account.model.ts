@@ -1,3 +1,5 @@
+import { Role } from "../role/role.model";
+
 export enum Gender {
     M = "m",
     F = "f"
@@ -10,17 +12,18 @@ export enum OauthProvider {
 
 
 export interface Account {
-    id: number,
-    oauthId?: string,
-    oauthProvider?: OauthProvider,
+    id: number;
+    oauthId?: string;
+    oauthProvider?: OauthProvider;
     firstName: string;
     lastName: string;
-    gender?: Gender,
+    gender?: Gender;
     email?: string;
     phoneNumber?: string;
     password?: string;
+    roles: Role[];
     enabled: boolean;
     verifiedAt?: number;
     createdAt: number;
-    updatedAt: number;
+    modifiedAt: number;
 }
