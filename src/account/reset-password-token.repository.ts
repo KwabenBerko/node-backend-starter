@@ -13,7 +13,7 @@ export namespace ResetPasswordTokenRepo {
         throw new Error();
     }
     
-    export const add = (verificationToken: ResetPasswordToken): Promise<ResetPasswordToken> => {
+    export const insert = (verificationToken: ResetPasswordToken): Promise<ResetPasswordToken> => {
         throw new Error();
     }
     

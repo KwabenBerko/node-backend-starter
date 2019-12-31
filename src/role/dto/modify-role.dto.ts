@@ -1,4 +1,4 @@
-export class CreateRoleDTO {
+export class ModifyRoleDTO {
     name: string;
     permissionIds: number[];
 }

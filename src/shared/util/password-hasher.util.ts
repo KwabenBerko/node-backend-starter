@@ -1,9 +1,11 @@
+import bcrypt from "bcrypt";
+
 export namespace PasswordHasherUtil {
-    export const hashPassword = (plainText: string): Promise<string> => {
-        throw new Error();
+    export const hashPassword = async (plainText: string): Promise<string> => {
+        return await bcrypt.hash(plainText, 10);
     }
     
-    export const comparePassword = (plainText: string, hash: string): Promise<boolean> => {
-        throw new Error();
+    export const comparePassword = async (plainText: string, hash: string): Promise<boolean> => {
+        return await bcrypt.compare(plainText, hash);
     }
 }

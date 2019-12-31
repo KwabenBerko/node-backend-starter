@@ -17,7 +17,7 @@ import { VerificationToken } from "./verification-token.model";
 import { ResetPasswordToken } from "./reset-password-token.model";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 import { UnAuthorizedError } from "../shared/errors/unauthorized.error";
-import { ForbiddenError } from "../shared/errors/forbidden.error";
+import { Role } from "../role/role.model";
 
 
 
@@ -25,48 +25,37 @@ const findByEmail = async (email: string): Promise<Account> => {
     return AccountRepo.findByEmail(email);
 }
 
-const buildAccount = (dto: RegisterAccountDTO | OauthLoginDTO): Account => {
-    return {
-        id: 0, //Will be auto incremeted by repo.
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        enabled: true,
-        roles: [],
-        createdAt: Date.now(),
-        modifiedAt: Date.now()
-    }
-}
 
 export namespace AccountService {
     export const register = async (dto: RegisterAccountDTO): Promise<Account> => {
         if (!(dto.firstName && dto.lastName && dto.gender && dto.email && dto.phoneNumber && dto.password && dto.confirmPassword)) {
-            throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA);
+            throw new BadRequestError();
         }
-    
+
         if (!ValidationUtil.isValidName(dto.firstName)) {
             throw new BadRequestError(MessageUtil.INVALID_FIRST_NAME)
         }
-    
+
         if (!ValidationUtil.isValidName(dto.lastName)) {
             throw new BadRequestError(MessageUtil.INVALID_LAST_NAME)
         }
-    
+
         if (!ValidationUtil.isValidEnum(Gender, dto.gender)) {
             throw new BadRequestError(MessageUtil.INVALID_GENDER)
         }
-    
+
         if (!ValidationUtil.isValidEmail(dto.email)) {
             throw new BadRequestError(MessageUtil.INVALID_EMAIL_ADDRESS)
         }
-    
+
         if (!ValidationUtil.isValidPhoneNumber(dto.phoneNumber)) {
             throw new BadRequestError(MessageUtil.INVALID_PHONE_NUMBER)
         }
-    
+
         if (!ValidationUtil.isValidPassword(dto.password)) {
             throw new BadRequestError(MessageUtil.INVALID_PASSWORD)
         }
-    
+
         if (!ValidationUtil.arePasswordsTheSame(dto.password, dto.confirmPassword)) {
             throw new BadRequestError(MessageUtil.PASSWORDS_DO_NOT_MATCH)
         }
@@ -76,200 +65,210 @@ export namespace AccountService {
 
         //     }
         // }
-    
+
         if (await findByEmail(dto.email)) {
             throw new ConflictError(MessageUtil.ACCOUNT_ALREADY_EXISTS)
         }
-    
-        const newAccount = buildAccount(dto);
+
+        const newAccount = new Account(dto.firstName, dto.lastName);
         newAccount.gender = Gender[dto.gender.toUpperCase() as keyof typeof Gender]
         newAccount.email = dto.email;
         newAccount.phoneNumber = dto.phoneNumber;
         newAccount.password = await PasswordHasherUtil.hashPassword(dto.password);
-    
-        return await AccountRepo.add(newAccount);
-    
+
+        return await AccountRepo.insert(newAccount);
+
     }
-    
+
     export const login = async (dto: LoginDTO): Promise<Account> => {
         if (!(dto.email && dto.password)) {
-            throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA)
+            throw new BadRequestError()
         }
-    
+
         const account = await findByEmail(dto.email);
-    
+
         if (!account || !await PasswordHasherUtil.comparePassword(dto.password, account.password!)) {
             throw new UnAuthorizedError(MessageUtil.INVALID_CREDENTIALS)
         }
-    
-        performAccountSecurityChecks(account);
-    
+
+        validateAccount(account);
+
         return account;
-    
+
     }
-    
+
     export const oauthLogin = async (dto: OauthLoginDTO): Promise<Account> => {
         if (!(dto.oauthId && dto.oauthProvider && dto.firstName && dto.lastName)) {
-            throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA);
+            throw new BadRequestError();
         }
-    
+
         if (!ValidationUtil.isValidName(dto.firstName)) {
             throw new BadRequestError(MessageUtil.INVALID_FIRST_NAME)
         }
-    
+
         if (!ValidationUtil.isValidName(dto.lastName)) {
             throw new BadRequestError(MessageUtil.INVALID_LAST_NAME)
         }
-    
+
         if (!ValidationUtil.isValidEnum(OauthProvider, dto.oauthProvider)) {
             throw new BadRequestError(MessageUtil.INVALID_OAUTH_PROVIDER)
         }
-    
+
         let account: Account
         account = await AccountRepo.findByOauthId(dto.oauthId);
-        if(account){
-            performAccountSecurityChecks(account);
+        if (account) {
+            validateAccount(account);
         }
-        else{
+        else {
             //New Oauth Account. Adding
-            const newAccount = buildAccount(dto);
+            const newAccount = new Account(dto.firstName, dto.lastName);
+            newAccount.oauthId = dto.oauthId;
+            newAccount.oauthProvider = OauthProvider[dto.oauthProvider.toUpperCase() as keyof typeof OauthProvider];
             newAccount.verifiedAt = Date.now();
-            account = await AccountRepo.add(newAccount)
+            account = await AccountRepo.insert(newAccount)
         }
-    
+
         return account;
-    
+
     }
-    
+
     export const generateVerificationTokenForAccount = async (accountId: number) => {
-    
+
         const account = await AccountRepo.findById(accountId);
         if (!account) {
             throw new NotFoundError(MessageUtil.ACCOUNT_NOT_FOUND);
         }
-    
-        if(account.verifiedAt){
+
+        if (account.verifiedAt) {
             throw new ConflictError(MessageUtil.ACCOUNT_ALREADY_VERIFIED);
         }
-    
+
         const verificationToken = await VerificationTokenRepo.findByAccountId(accountId);
-    
+
         if (verificationToken) {
             await VerificationTokenRepo.remove(verificationToken);
         }
-    
+
         const token = await generateUniqueVerificationToken()
-    
-        const newVerificationToken: VerificationToken = {
-            id: 0,
+
+        const newVerificationToken = new VerificationToken({
             accountId: account.id,
             token: token,
             expiresOn: moment().add(1, "hour").toDate().getMilliseconds()
-        }
-    
-        await VerificationTokenRepo.add(newVerificationToken);
-    
+        });
+        
+
+        await VerificationTokenRepo.insert(newVerificationToken);
+
         return {
             token: newVerificationToken.token,
             expiresOn: newVerificationToken.expiresOn
         };
     }
-    
+
     export const verifyAccount = async (token: string): Promise<void> => {
-    
+
         const currentDateTime = moment();
         const verificationToken = await VerificationTokenRepo.findByToken(token);
-    
+
         if (!verificationToken || currentDateTime.isAfter(moment(verificationToken.expiresOn))) {
             throw new BadRequestError(MessageUtil.INVALID_VERIFICATION_TOKEN);
         }
-    
+
         const account = await AccountRepo.findById(verificationToken.accountId);
         account.verifiedAt = currentDateTime.toDate().getMilliseconds();
-    
+
         await VerificationTokenRepo.remove(verificationToken);
         await AccountRepo.update(account);
     }
-    
+
     export const generateResetPasswordTokenForAccount = async (accountId: number) => {
-    
+
         const account = await AccountRepo.findById(accountId);
         if (!account) {
             throw new NotFoundError(MessageUtil.ACCOUNT_NOT_FOUND);
         }
-    
+
         const resetPasswordToken = await ResetPasswordTokenRepo.findByAccountId(accountId);
         if (resetPasswordToken) {
             await ResetPasswordTokenRepo.remove(resetPasswordToken);
         }
-    
+
         const token = await generateUniqueResetPasswordToken();
-    
-        const newResetPasswordToken: ResetPasswordToken = {
-            id: 0,
+
+        const newResetPasswordToken = new ResetPasswordToken({
             accountId: account.id,
             token: token,
             expiresOn: moment().add(30, "minutes").toDate().getMilliseconds()
-        }
-    
-        await ResetPasswordTokenRepo.add(newResetPasswordToken);
-    
+        });
+
+        await ResetPasswordTokenRepo.insert(newResetPasswordToken);
+
         return {
             token: newResetPasswordToken.token,
             expiresOn: newResetPasswordToken.expiresOn
         }
     }
-    
+
     export const resetPassword = async (dto: ResetPasswordDTO): Promise<void> => {
-        if(!(dto.token && dto.password && dto.confirmPassword)){
-            throw new BadRequestError(MessageUtil.INVALID_REQUEST_DATA);
+        if (!(dto.token && dto.password && dto.confirmPassword)) {
+            throw new BadRequestError();
         }
-    
-        if(!ValidationUtil.isValidPassword(dto.password)){
+
+        if (!ValidationUtil.isValidPassword(dto.password)) {
             throw new BadRequestError(MessageUtil.INVALID_PASSWORD);
         }
-    
-        if(!ValidationUtil.arePasswordsTheSame(dto.password, dto.confirmPassword)){
+
+        if (!ValidationUtil.arePasswordsTheSame(dto.password, dto.confirmPassword)) {
             throw new BadRequestError(MessageUtil.PASSWORDS_DO_NOT_MATCH);
         }
-    
+
         const currentDateTime = moment();
         const resetPasswordToken = await ResetPasswordTokenRepo.findByToken(dto.token);
-    
-        if(!resetPasswordToken || currentDateTime.isAfter(moment(resetPasswordToken.expiresOn))){
+
+        if (!resetPasswordToken || currentDateTime.isAfter(moment(resetPasswordToken.expiresOn))) {
             throw new BadRequestError(MessageUtil.INVALID_RESET_PASSWORD_TOKEN);
         }
-    
+
         const account = await AccountRepo.findById(resetPasswordToken.accountId);
         account.password = await PasswordHasherUtil.hashPassword(dto.password);
-    
+
         await AccountRepo.update(account);
     }
 
-    export const checkPermission = async (permission: string, account: Account): Promise<void> => {
-        if(!account || !account.roles.length){
-            throw new ForbiddenError(MessageUtil.PERMISSION_DENIED);
+    export const findAccountsForRole = async (role: Role): Promise<Account[]> => {
+        const accounts = (await AccountRepo.findAll()).filter(account => {
+            return account.roles.some(r => role.id == r.id);
+        })
+        return accounts;
+    }
+
+    export const hasPermission = (permission: string, account: Account): boolean => {
+        if (!account || !account.roles.length) {
+            return false;
         }
 
         let accountPermissions: string[] = [];
-        for(let i = 0; i < account.roles.length; i++){
+        for (let i = 0; i < account.roles.length; i++) {
             account.roles[i].permissions.forEach(permission => {
                 accountPermissions.push(permission.name);
-            });    
+            });
         }
-        
-        if(!new Set([...accountPermissions]).has(permission)){
-            throw new ForbiddenError(MessageUtil.PERMISSION_DENIED);
+
+        if (!new Set([...accountPermissions]).has(permission)) {
+            return false;
         }
+
+        return true;
     }
 }
 
-const performAccountSecurityChecks = (account: Account) => {
-    if(!account.enabled){
+const validateAccount = (account: Account) => {
+    if (!account.enabled) {
         throw new UnAuthorizedError(MessageUtil.ACCOUNT_DISABLED);
     }
 
-    if(!account.verifiedAt){
+    if (!account.verifiedAt) {
         throw new UnAuthorizedError(MessageUtil.ACCOUNT_NOT_VERIFIED);
     }
 }
@@ -301,3 +300,4 @@ const generateToken = (length: number): string => {
         characters: "1234567890"
     })
 };
+

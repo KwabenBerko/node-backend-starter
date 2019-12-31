@@ -22,6 +22,8 @@ export namespace MessageUtil {
 
 
     //ROLES AND PERMISSIONS
+    export const ROLE_NOT_FOUND = "Role not found.";
+    export const ROLE_IN_USE = "Role cannot be deleted as it's still in use by other accounts. Unassign this role from these accounts and try again.";
     export const INVALID_PERMISSIONS_LENGTH = "A role must have at least one permission.";
     export const PERMISSION_NOT_FOUND = "Permission not found.";
     export const PERMISSION_DENIED = "You do not have permission to perform this operation. Kindly contact an administrator.";

@@ -1,6 +1,11 @@
 import { Account } from "./account.model";
 
 export namespace AccountRepo {
+
+    export const findAll = (): Promise<Account[]> => {
+        throw new Error();
+    }
+
     export const findByEmail = (email: string): Promise<Account> => {
         throw new Error();
     }
@@ -17,7 +22,7 @@ export namespace AccountRepo {
         throw new Error()
     }
     
-    export const add = (account: Account): Promise<Account> => {
+    export const insert = (account: Account): Promise<Account> => {
         throw new Error();
     }
 }

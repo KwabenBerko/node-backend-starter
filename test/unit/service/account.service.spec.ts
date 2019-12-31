@@ -4,8 +4,9 @@ import { AccountService } from "../../../src/account/account.service";
 import { AccountRepo } from "../../../src/account/account.repository";
 import { VerificationTokenRepo } from "../../../src/account/verification-token.repository"
 import { ResetPasswordTokenRepo } from "../../../src/account/reset-password-token.repository"
+import { permissionContants } from "../../../src/shared/util/constant.util";
 import { MessageUtil } from "../../../src/shared/util/message.util";
-import { PasswordHasherUtil } from "../../../src/shared/util/password-hasher.util"
+import { PasswordHasherUtil } from "../../../src/shared/util/password-hasher.util";
 import { RegisterAccountDTO } from "../../../src/account/dto/register-account.dto"
 import { BadRequestError } from "../../../src/shared/errors/bad-request.error";
 import { ConflictError } from "../../../src/shared/errors/conflict.error";
@@ -14,7 +15,7 @@ import { OauthLoginDTO } from "../../../src/account/dto/oauth-login.dto";
 import { NotFoundError } from "../../../src/shared/errors/not-found.error";
 import { ResetPasswordDTO } from "../../../src/account/dto/reset-password.dto";
 import { UnAuthorizedError } from "../../../src/shared/errors/unauthorized.error";
-import { ForbiddenError } from "../../../src/shared/errors/forbidden.error";
+import { Account } from "../../../src/account/account.model";
 
 
 describe("Account Service", () => {
@@ -80,7 +81,7 @@ describe("Account Service", () => {
         it("should successfully create account", async () => {
             const findByEmailStub = sandbox.stub(AccountRepo, "findByEmail").resolves(undefined);
             const hashPasswordStub = sandbox.stub(PasswordHasherUtil, "hashPassword").resolves(faker.random.uuid())
-            const insertAccountStub = sandbox.stub(AccountRepo, "add").resolves(account)
+            const insertAccountStub = sandbox.stub(AccountRepo, "insert").resolves(account)
 
             await expect(AccountService.register(registerAccountDTO))
                 .to.be.eventually.fulfilled;
@@ -169,7 +170,7 @@ describe("Account Service", () => {
 
         it("should create account and login if the oauthId does not exist", async () => {
             const findByOauthIdStub = sandbox.stub(AccountRepo, "findByOauthId").resolves(undefined)
-            const insertAccountStub = sandbox.stub(AccountRepo, "add").resolves(account)
+            const insertAccountStub = sandbox.stub(AccountRepo, "insert").resolves(account)
 
             const promise = AccountService.oauthLogin(oauthLoginDTO)
             await expect(promise).to.be.fulfilled
@@ -180,7 +181,7 @@ describe("Account Service", () => {
 
         it("should login if oauthId already exist", async () => {
             const findByOauthIdStub = sandbox.stub(AccountRepo, "findByOauthId").resolves(account)
-            const insertAccountStub = sandbox.stub(AccountRepo, "add").resolves(account)
+            const insertAccountStub = sandbox.stub(AccountRepo, "insert").resolves(account)
 
 
             const promise = AccountService.oauthLogin(oauthLoginDTO)
@@ -218,7 +219,7 @@ describe("Account Service", () => {
             sandbox.stub(AccountRepo, "findById").resolves({ ...account, verifiedAt: undefined })
             sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined);
             sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
-            const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
+            const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "insert").resolves(verificationToken);
             const createdToken = await AccountService.generateVerificationTokenForAccount(1);
 
             expect(createdToken.token.length).to.be.equal(4);
@@ -229,7 +230,7 @@ describe("Account Service", () => {
         it("should generate a unique verification token", async () => {
             sandbox.stub(AccountRepo, "findById").resolves({ ...account, verifiedAt: undefined });
             sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(undefined);
-            sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
+            sandbox.stub(VerificationTokenRepo, "insert").resolves(verificationToken);
             const findTokenStub = sandbox.stub(VerificationTokenRepo, "findByToken")
                 .onFirstCall().resolves(verificationToken)
                 .onSecondCall().resolves(undefined);
@@ -243,7 +244,7 @@ describe("Account Service", () => {
             sandbox.stub(VerificationTokenRepo, "findByAccountId").resolves(verificationToken)
             sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
             const removeVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves();
-            const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "add").resolves(verificationToken);
+            const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "insert").resolves(verificationToken);
 
             await expect(AccountService.generateVerificationTokenForAccount(1)).to.be.eventually.fulfilled;
             expect(removeVerificationTokenStub).to.be.calledOnce
@@ -305,7 +306,7 @@ describe("Account Service", () => {
             sandbox.stub(AccountRepo, "findById").resolves(account)
             sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(undefined)
             sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(undefined);
-            const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "add").resolves(resetPasswordToken);
+            const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "insert").resolves(resetPasswordToken);
 
             const createdToken = await AccountService.generateResetPasswordTokenForAccount(1);
 
@@ -317,7 +318,7 @@ describe("Account Service", () => {
         it("should generate a unique reset password token", async () => {
             sandbox.stub(AccountRepo, "findById").resolves(account);
             sandbox.stub(ResetPasswordTokenRepo, "findByAccountId").resolves(undefined);
-            sandbox.stub(ResetPasswordTokenRepo, "add").resolves(resetPasswordToken);
+            sandbox.stub(ResetPasswordTokenRepo, "insert").resolves(resetPasswordToken);
             const findTokenStub = sandbox.stub(ResetPasswordTokenRepo, "findByToken")
                 .onFirstCall().resolves(resetPasswordToken)
                 .onSecondCall().resolves(resetPasswordToken)
@@ -333,7 +334,7 @@ describe("Account Service", () => {
             sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves(undefined);
 
             const removeResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "remove").resolves()
-            const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "add").resolves(verificationToken);
+            const addResetPasswordTokenStub = sandbox.stub(ResetPasswordTokenRepo, "insert").resolves(verificationToken);
 
 
             await expect(AccountService.generateResetPasswordTokenForAccount(1)).to.be.eventually.fulfilled;
@@ -394,24 +395,55 @@ describe("Account Service", () => {
         })
     })
 
-    describe("Check Permissions", () => {
-        it("should throw ForbiddenError if roles length is less than 1", async () => {
+    describe("Find accounts for role", () => {
+        it("should return all accounts for the specified role", async () => {
+            const accountOne: Account = {
+                ...account,
+                roles: [
+                    {...role, id: 5}
+                ]
+            };
 
-            expect(AccountService.checkPermission("", { ...account, roles: [] })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+            const accountTwo: Account = {
+                ...account,
+                roles: [
+                    {...role, id: 3}
+                ]
+            };
+
+            const accountThree: Account = {
+                ...account,
+                roles: [
+                    {...role, id: 5}
+                ]
+            };
+            
+
+            sandbox.stub(AccountRepo, "findAll").resolves([accountOne, accountTwo, accountThree])
+
+            const promise = AccountService.findAccountsForRole({...role, id: 5});
+            await expect(promise).to.be.eventually.fulfilled;
+            expect(await promise).to.have.length(2);
+        })
+    })
+
+    describe("Has permission", () => {
+        it("should return false if roles length is less than 1", async () => {
+
+            expect(AccountService.hasPermission("", { ...account, roles: [] })).to.be.false;
 
         })
 
-        it("should throw ForbiddenError if account does not have permission", async () => {
-            const permissionName = "ACCESS_DASHBOARD";
-
-            expect(AccountService.checkPermission(permissionName, { ...account, roles: [role] })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+        it("should return false if account does not have permission", async () => {
+        
+            expect(AccountService.hasPermission(permissionContants.READ_ROLES, { ...account, roles: [role] })).to.be.false;
 
         })
 
-        it("should resolve if account has permission", async () => {
-            const permissionName = "ACCESS_DASHBOARD";
+        it("should return true if account has permission", async () => {
+            const permissionName = permissionContants.READ_ROLES;
 
-            expect(AccountService.checkPermission(permissionName, {
+            expect(AccountService.hasPermission(permissionName, {
                 ...account,
                 roles: [
                     {
@@ -420,7 +452,7 @@ describe("Account Service", () => {
                         ]
                     }
                 ]
-            })).to.be.eventually.fulfilled;
+            })).to.be.true;
 
         })
     })

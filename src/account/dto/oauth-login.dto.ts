@@ -1,6 +1,6 @@
-export interface OauthLoginDTO {
-    oauthId: string,
-    oauthProvider: string,
-    firstName: string,
-    lastName: string,
+export class OauthLoginDTO {
+    oauthId: string;
+    oauthProvider: string;
+    firstName: string;
+    lastName: string;
 }

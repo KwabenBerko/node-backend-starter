@@ -13,7 +13,7 @@ export namespace VerificationTokenRepo{
         throw new Error();
     }
     
-    export const add = (verificationToken: VerificationToken): Promise<VerificationToken> => {
+    export const insert = (verificationToken: VerificationToken): Promise<VerificationToken> => {
         throw new Error();
     }
     
