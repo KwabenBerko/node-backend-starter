@@ -9,7 +9,7 @@ export namespace ResetPasswordTokenRepo {
         throw new Error();
     }
     
-    export const findByAccountId = (accountId: number): Promise<ResetPasswordToken> => {
+    export const findByUserId = (userId: number): Promise<ResetPasswordToken> => {
         throw new Error();
     }
     

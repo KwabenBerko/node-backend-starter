@@ -4,15 +4,15 @@ export class Role {
     id: number;
     name: string;
     permissions: Permission[];
-    createdAt: number;
-    modifiedAt: number;
+    createdOn: number;
+    modifiedOn: number;
 
     constructor(name: string, permissions: Permission[]){
         this.id = 0;
         this.name = name;
         this.permissions = permissions;
-        this.createdAt = Date.now();
-        this.modifiedAt = Date.now();
+        this.createdOn = Date.now();
+        this.modifiedOn = Date.now();
     }
 }
 

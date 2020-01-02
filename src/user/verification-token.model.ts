@@ -1,16 +1,16 @@
 export class VerificationToken {
     id: number;
-    accountId: number;
+    userId: number;
     token: string;
     expiresOn: number;
 
     constructor(data: {
-        accountId: number,
+        userId: number,
         token: string,
         expiresOn: number
     }){
         this.id = 0;
-        this.accountId = data.accountId,
+        this.userId = data.userId,
         this.token = data.token,
         this.expiresOn = data.expiresOn
     }

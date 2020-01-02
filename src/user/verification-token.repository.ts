@@ -9,7 +9,7 @@ export namespace VerificationTokenRepo{
         throw new Error();
     }
     
-    export const findByAccountId = (accountId: number): Promise<VerificationToken> => {
+    export const findByUserId = (userId: number): Promise<VerificationToken> => {
         throw new Error();
     }
     

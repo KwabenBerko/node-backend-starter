@@ -6,8 +6,8 @@ import { PermissionRepo } from "../permission/permission.repository";
 import { MessageUtil } from "../shared/util/message.util";
 import { ConflictError } from "../shared/errors/conflict.error";
 import { NotFoundError } from "../shared/errors/not-found.error";
-import { Account } from "../account/account.model";
-import { AccountService } from "../account/account.service";
+import { User } from "../user/user.model";
+import { UserService } from "../user/user.service";
 import { permissionContants } from "../shared/util/constant.util";
 import { ForbiddenError } from "../shared/errors/forbidden.error";
 import { ModifyRoleDTO } from "./dto/modify-role.dto";
@@ -28,9 +28,17 @@ export namespace RoleService {
         return await RoleRepo.findById(id);
     }
 
-    export const add = async (dto: CreateRoleDTO, account: Account):Promise<Role> => {
+    export const findAll = async (user: User): Promise<Role[]> => {
+        if(!UserService.hasPermissionTo(permissionContants.READ_ROLES, user)){
+            throw new ForbiddenError();
+        }
 
-        if(!AccountService.hasPermission(permissionContants.ADD_ROLES, account)){
+        return RoleRepo.findAll();
+    }
+
+    export const add = async (dto: CreateRoleDTO, user: User):Promise<Role> => {
+
+        if(!UserService.hasPermissionTo(permissionContants.ADD_ROLES, user)){
             throw new ForbiddenError();
         }
 
@@ -53,9 +61,9 @@ export namespace RoleService {
         
     }
 
-    export const modify = async (id: number, dto: ModifyRoleDTO, account: Account): Promise<Role> => {
+    export const modify = async (id: number, dto: ModifyRoleDTO, user: User): Promise<Role> => {
 
-        if(!AccountService.hasPermission(permissionContants.MODIFY_ROLES, account)){
+        if(!UserService.hasPermissionTo(permissionContants.MODIFY_ROLES, user)){
             throw new ForbiddenError();
         }
 
@@ -75,13 +83,13 @@ export namespace RoleService {
         return await RoleRepo.update(role);
     }
 
-    export const remove = async (roleId: number, account: Account): Promise<Role> => {
-        if(!AccountService.hasPermission(permissionContants.DELETE_ROLES, account)){
+    export const remove = async (roleId: number, user: User): Promise<Role> => {
+        if(!UserService.hasPermissionTo(permissionContants.DELETE_ROLES, user)){
             throw new ForbiddenError();
         }
 
         const role = await findByIdOrThrow(roleId);
-        const accounts = await AccountService.findAccountsForRole(role);
+        const accounts = await UserService.findUsersForRole(role);
         if(accounts.length){
             throw new ConflictError(MessageUtil.ROLE_IN_USE);
         }
