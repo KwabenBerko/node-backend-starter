@@ -9,11 +9,11 @@ export namespace VerificationTokenRepo{
         throw new Error();
     }
     
-    export const findByAccountId = (accountId: number): Promise<VerificationToken> => {
+    export const findByUserId = (userId: number): Promise<VerificationToken> => {
         throw new Error();
     }
     
-    export const add = (verificationToken: VerificationToken): Promise<VerificationToken> => {
+    export const insert = (verificationToken: VerificationToken): Promise<VerificationToken> => {
         throw new Error();
     }
     

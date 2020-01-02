@@ -11,9 +11,9 @@ export enum OauthProvider {
 }
 
 
-export interface Account {
+export class User {
     id: number;
-    oauthId?: string;
+    oauthId?: string
     oauthProvider?: OauthProvider;
     firstName: string;
     lastName: string;
@@ -24,6 +24,20 @@ export interface Account {
     roles: Role[];
     enabled: boolean;
     verifiedAt?: number;
+    lastLoginAt?: number;
     createdAt: number;
     modifiedAt: number;
+
+    constructor(data: {
+        firstName: string, 
+        lastName: string
+    }){
+        this.id = 0;
+        this.firstName = data.firstName;
+        this.lastName = data.lastName;
+        this.enabled = true;
+        this.roles = [];
+        this.createdAt = Date.now();
+        this.modifiedAt = Date.now();
+    }
 }

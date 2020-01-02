@@ -1,36 +1,37 @@
 import faker from "faker";
-import { Account, Gender } from "../../src/account/account.model";
-import { RegisterAccountDTO } from "../../src/account/dto/register-account.dto";
-import { ResetPasswordToken } from "../../src/account/reset-password-token.model";
-import { VerificationToken } from "../../src/account/verification-token.model";
-import { ResetPasswordDTO } from "../../src/account/dto/reset-password.dto";
-import { OauthLoginDTO } from "../../src/account/dto/oauth-login.dto";
-import { LoginDTO } from "../../src/account/dto/login.dto";
+import { User, Gender } from "../../src/user/user.model";
+import { RegisterUserDTO } from "../../src/user/dto/register-user.dto";
+import { ResetPasswordToken } from "../../src/user/reset-password-token.model";
+import { VerificationToken } from "../../src/user/verification-token.model";
+import { ResetPasswordDTO } from "../../src/user/dto/reset-password.dto";
+import { OauthLoginDTO } from "../../src/user/dto/oauth-login.dto";
+import { LoginDTO } from "../../src/user/dto/login.dto";
 import { Role } from "../../src/role/role.model";
 import { CreateRoleDTO } from "../../src/role/dto/create-role.dto";
 import { Permission } from "../../src/permission/permission.model";
+import { ModifyRoleDTO } from "../../src/role/dto/modify-role.dto";
 
 const password = faker.internet.password();
 const phoneNumber = faker.phone.phoneNumber("+233#########");
 
 
-export const account: Readonly<Account> = {
-    id: faker.random.number(50),
-    firstName: faker.name.firstName(),
-    lastName: faker.name.lastName(),
-    gender: Gender["F"],
-    email: faker.internet.email(),
-    phoneNumber: phoneNumber,
-    password: password,
-    roles: [],
-    enabled: true,
-    verifiedAt: faker.date.past().getTime(),
-    createdAt: faker.date.past().getTime(),
-    modifiedAt: faker.date.recent().getTime()
-};
+const user: User = new User({
+    firstName: faker.name.firstName(), 
+    lastName: faker.name.lastName()
+});
+user.id = faker.random.number(50);
+user.gender = Gender["F"];
+user.email = faker.internet.email();
+user.phoneNumber = phoneNumber;
+user.password = password;
+user.roles = [];
+user.enabled = true;
+user.verifiedAt = faker.date.past().getTime();
+user.createdAt = faker.date.past().getTime();
+user.modifiedAt = faker.date.recent().getTime();
 
 
-export const registerAccountDTO: Readonly<RegisterAccountDTO> = {
+const registerUserDTO: RegisterUserDTO = new RegisterUserDTO({
     firstName: faker.name.firstName(),
     lastName: faker.name.lastName(),
     gender: faker.random.arrayElement(["m", "f"]),
@@ -38,59 +39,76 @@ export const registerAccountDTO: Readonly<RegisterAccountDTO> = {
     phoneNumber: phoneNumber,
     password: password,
     confirmPassword: password
-};
+});
 
 
-export const loginDTO: Readonly<LoginDTO> = {
+
+const loginDTO = new LoginDTO({
     email: faker.internet.email(),
     password: password
-}
+});
 
-export const oauthLoginDTO: Readonly<OauthLoginDTO> = {
+const oauthLoginDTO = new OauthLoginDTO({
     oauthId: faker.random.uuid(),
     oauthProvider: faker.random.arrayElement(["google", "facebook"]),
     firstName: faker.name.firstName(),
-    lastName: faker.name.lastName(),
-};
+    lastName: faker.name.lastName()
+});
 
-export const resetPasswordDTO: Readonly<ResetPasswordDTO> = {
+const resetPasswordDTO = new ResetPasswordDTO({
     token: faker.random.uuid(),
-    password,
+    password: password,
     confirmPassword: password
-};
+});
 
-export const verificationToken: Readonly<VerificationToken> = {
-    id: faker.random.number(5),
-    accountId: faker.random.number(3),
+const verificationToken = new VerificationToken({
+    userId: faker.random.number(3),
     token: faker.random.uuid(),
     expiresOn: faker.date.future().getTime()
-};
+});
+verificationToken.id = faker.random.number(5);
 
-export const resetPasswordToken: Readonly<ResetPasswordToken> = {
-    id: faker.random.number(2),
-    accountId: faker.random.number(4),
+const resetPasswordToken = new ResetPasswordToken({
+    userId: faker.random.number(4),
     token: faker.random.uuid(),
     expiresOn: faker.date.future().getTime()
-};
+});
+resetPasswordToken.id = faker.random.number(2);
 
-export const permission: Permission = {
-    id: faker.random.number(3),
-    name: `${faker.hacker.verb().toUpperCase()} ${faker.hacker.noun().toUpperCase()}`
-}
 
-export const role: Readonly<Role> = {
-    id: faker.random.number(5),
-    name: "Super Administrator",
-    permissions: [permission],
-    createdAt: faker.date.past().getTime(),
-    modifiedAt: faker.date.past().getTime()
-};
+const permission = new Permission({
+    name: `${faker.hacker.verb().toUpperCase()}_${faker.hacker.noun().toUpperCase()}`
+});
+permission.id = faker.random.number(3);
 
-export const createRoleDTO: Readonly<CreateRoleDTO> = {
-    name: "Auditor",
+
+const role = new Role("Super Administrator", [permission]);
+role.id = faker.random.number(5);
+role.createdOn = faker.date.past().getTime();
+role.modifiedOn = faker.date.past().getTime();
+
+const createRoleDTO = new CreateRoleDTO({
+    name: "Basic",
     permissionIds: [2, 5, 1]
-};
+});
+
+
+const modifyRoleDTO = new ModifyRoleDTO({
+    name: "Auditor",
+    permissionIds: [7, 9, 2, 1]
+});
 
 export {
-    faker
+    faker,
+    user,
+    registerUserDTO as registerAccountDTO,
+    loginDTO,
+    oauthLoginDTO,
+    resetPasswordDTO,
+    verificationToken,
+    resetPasswordToken,
+    permission,
+    role,
+    createRoleDTO,
+    modifyRoleDTO
 }
