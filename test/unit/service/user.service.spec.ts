@@ -437,28 +437,37 @@ describe("User Service", () => {
     describe("Has permission", () => {
         it("should return false if roles length is less than 1", async () => {
 
-            expect(UserService.hasPermissionTo("", { ...user, roles: [] })).to.be.false;
+            expect(UserService.hasPermissionTo({
+                permission: "",
+                user: { ...user, roles: [] }
+            })).to.be.false;
 
         })
 
         it("should return false if user does not have permission", async () => {
 
-            expect(UserService.hasPermissionTo(permissionContants.READ_ROLES, { ...user, roles: [role] })).to.be.false;
+            expect(UserService.hasPermissionTo({
+                permission: permissionContants.READ_ROLES, 
+                user: { ...user, roles: [role] }
+            })).to.be.false;
 
         })
 
         it("should return true if user has permission", async () => {
             const permissionName = permissionContants.READ_ROLES;
 
-            expect(UserService.hasPermissionTo(permissionName, {
-                ...user,
-                roles: [
-                    {
-                        ...role, permissions: [
-                            { ...permission, name: permissionName }
-                        ]
-                    }
-                ]
+            expect(UserService.hasPermissionTo({
+                permission: permissionName, 
+                user: {
+                    ...user,
+                    roles: [
+                        {
+                            ...role, permissions: [
+                                { ...permission, name: permissionName }
+                            ]
+                        }
+                    ]
+                }
             })).to.be.true;
 
         })
@@ -468,14 +477,20 @@ describe("User Service", () => {
         it("should throw ForbiddenError if userId does not belong to the current user and does not have permission to view other's profile", async () => {
             sandbox.stub(UserService, "hasPermissionTo").returns(false);
 
-            await expect(UserService.getProfile(12, { ...user, id: 3 })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+            await expect(UserService.getProfile({
+                userId: 12,
+                currentUser: { ...user, id: 3 }
+            })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
         })
 
         it("should successfully return user's profile if the userId belongs to the current user", async () => {
             const userId = 10;
             const findByIdStub = sandbox.stub(UserRepo, "findById").resolves(user)
 
-            const promise = UserService.getProfile(userId, { ...user, id: userId });
+            const promise = UserService.getProfile({
+                userId: userId, 
+                currentUser: { ...user, id: userId }
+            });
             await expect(promise).to.be.eventually.fulfilled;
 
             expect(await promise).to.be.not.undefined;
@@ -486,7 +501,10 @@ describe("User Service", () => {
             const findByIdStub = sandbox.stub(UserRepo, "findById").resolves(user)
             sandbox.stub(UserService, "hasPermissionTo").returns(true);
 
-            const promise = UserService.getProfile(12, { ...user, id: 27 });
+            const promise = UserService.getProfile({
+                userId: 12, 
+                currentUser: { ...user, id: 27 }
+            });
             await expect(promise).to.be.eventually.fulfilled;
 
             expect(await promise).to.be.not.undefined;

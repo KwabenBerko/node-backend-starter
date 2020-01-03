@@ -112,10 +112,18 @@ export namespace UserService {
 
     }
 
-    export const getProfile = async (userId: number, currentUser: User): Promise<User> => {
+    export const getProfile = async (
+        data: {
+            userId: number, 
+            currentUser: User
+        }
+    ): Promise<User> => {
 
-        if(userId == currentUser.id || hasPermissionTo(permissionContants.READ_USERS, currentUser)){
-            const user = await UserRepo.findById(userId);
+        if(data.userId == data.currentUser.id || hasPermissionTo({
+            permission: permissionContants.READ_USERS, 
+            user: data.currentUser
+        })){
+            const user = await UserRepo.findById(data.userId);
             return user;
         }
 
@@ -265,27 +273,37 @@ export namespace UserService {
         return users;
     }
 
-    export const hasPermissionTo = (permission: string, user: User): boolean => {
-        if (!user || !user.roles.length) {
+    export const hasPermissionTo = (
+        data: {
+            permission: string, 
+            user: User
+        }
+    ): boolean => {
+        if (!data.user || !data.user.roles.length) {
             return false;
         }
 
         let userPermissions: string[] = [];
-        for (let i = 0; i < user.roles.length; i++) {
-            user.roles[i].permissions.forEach(permission => {
-                userPermissions.push(permission.name);
+        for (let i = 0; i < data.user.roles.length; i++) {
+            data.user.roles[i].permissions.forEach(perm => {
+                userPermissions.push(perm.name);
             });
         }
 
-        if (!new Set([...userPermissions]).has(permission)) {
+        if (!new Set([...userPermissions]).has(data.permission)) {
             return false;
         }
 
         return true;
     }
 
-    export const hasPermissionToOrThrow = (permission: string, user: User) => {
-        if(!hasPermissionTo(permission, user)){
+    export const hasPermissionToOrThrow = (
+        data: {
+            permission: string, 
+            user: User
+        }
+    ) => {
+        if(!hasPermissionTo(data)){
             throw new ForbiddenError();
         }
     }
@@ -297,7 +315,11 @@ export namespace UserService {
             currentUser: User
         }
     ) => {
-        hasPermissionToOrThrow(permissionContants.ASSIGN_ROLES_TO_USERS, data.currentUser);
+
+        hasPermissionToOrThrow({
+            permission: permissionContants.ASSIGN_ROLES_TO_USERS, 
+            user: data.currentUser
+        });
 
         const role = await RoleService.findByIdOrThrow(data.roleId);
         const user = await findByIdOrThrow(data.userId);
@@ -314,7 +336,10 @@ export namespace UserService {
             currentUser: User
         }
     ) => {
-        hasPermissionToOrThrow(permissionContants.UNASSIGN_ROLES_FROM_USERS, data.currentUser);
+        hasPermissionToOrThrow({
+            permission: permissionContants.UNASSIGN_ROLES_FROM_USERS, 
+            user: data.currentUser
+        });
 
         const role = await RoleService.findByIdOrThrow(data.roleId);
         const user = await findByIdOrThrow(data.userId);

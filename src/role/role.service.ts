@@ -17,7 +17,7 @@ export namespace RoleService {
 
     export const findByIdOrThrow = async (id: number): Promise<Role> => {
         const role = await findById(id);
-        if(!role){
+        if (!role) {
             throw new NotFoundError(MessageUtil.ROLE_NOT_FOUND);
         }
 
@@ -29,42 +29,51 @@ export namespace RoleService {
     }
 
     export const findAll = async (currentUser: User): Promise<Role[]> => {
-        UserService.hasPermissionToOrThrow(permissionContants.READ_ROLES, currentUser)
-        return RoleRepo.findAll();``
+        UserService.hasPermissionToOrThrow({
+            permission: permissionContants.READ_ROLES, 
+            user: currentUser
+        })
+        return RoleRepo.findAll(); ``
     }
 
-    export const add = async (dto: CreateRoleDTO, currentUser: User):Promise<Role> => {
+    export const add = async (dto: CreateRoleDTO, currentUser: User): Promise<Role> => {
 
-        UserService.hasPermissionToOrThrow(permissionContants.ADD_ROLES, currentUser)
+        UserService.hasPermissionToOrThrow({
+            permission: permissionContants.ADD_ROLES,
+            user: currentUser
+        })
 
-        if(!(dto.name && dto.permissionIds)){
+        if (!(dto.name && dto.permissionIds)) {
             throw new BadRequestError();
         }
-    
-        if(dto.permissionIds.length < 1){
+
+        if (dto.permissionIds.length < 1) {
             throw new BadRequestError(MessageUtil.INVALID_PERMISSIONS_LENGTH);
         }
-    
+
         const role = await RoleRepo.findByName(dto.name);
-        if(role){
+        if (role) {
             throw new ConflictError(MessageUtil.ROLE_ALREADY_EXISTS);
         }
-    
+
         const permissions = await findPermissions(dto.permissionIds);
         const newRole = new Role(dto.name, permissions)
         return await RoleRepo.insert(newRole);
-        
+
     }
 
     export const modify = async (id: number, dto: ModifyRoleDTO, currentUser: User): Promise<Role> => {
 
-        UserService.hasPermissionToOrThrow(permissionContants.MODIFY_ROLES, currentUser)
+        UserService.hasPermissionToOrThrow({
+            permission: permissionContants.MODIFY_ROLES,
+            user: currentUser
+        })
 
-        if(!(dto.name && dto.permissionIds)){
+        if (!(dto.name && dto.permissionIds)) {
             throw new BadRequestError();
         }
 
-        if(!dto.permissionIds.length){
+        if (!dto.permissionIds.length) {
             throw new BadRequestError();
         }
         const role = await findByIdOrThrow(id);
@@ -77,11 +86,14 @@ export namespace RoleService {
     }
 
     export const remove = async (roleId: number, currentUser: User): Promise<Role> => {
-        UserService.hasPermissionToOrThrow(permissionContants.DELETE_ROLES, currentUser)
+        UserService.hasPermissionToOrThrow({
+            permission: permissionContants.DELETE_ROLES,
+            user: currentUser
+        })
 
         const role = await findByIdOrThrow(roleId);
         const accounts = await UserService.findUsersForRole(role);
-        if(accounts.length){
+        if (accounts.length) {
             throw new ConflictError(MessageUtil.ROLE_IN_USE);
         }
         return RoleRepo.remove(role);
@@ -92,7 +104,7 @@ export namespace RoleService {
         return await Promise.all(
             permissionIds.map(async permissionId => {
                 const permission = await PermissionRepo.findById(permissionId);
-                if(!permission){
+                if (!permission) {
                     throw new NotFoundError(MessageUtil.PERMISSION_NOT_FOUND);
                 }
                 return permission;
