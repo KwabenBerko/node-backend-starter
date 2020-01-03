@@ -19,6 +19,7 @@ export namespace UserRepo {
     }
     
     export const update = (user: User): Promise<User> => {
+        //Check if user has relationships eg. role, then add that to the db too
         throw new Error()
     }
     

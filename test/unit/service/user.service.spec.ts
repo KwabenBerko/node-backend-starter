@@ -16,6 +16,8 @@ import { NotFoundError } from "../../../src/shared/errors/not-found.error";
 import { ResetPasswordDTO } from "../../../src/user/dto/reset-password.dto";
 import { UnAuthorizedError } from "../../../src/shared/errors/unauthorized.error";
 import { User } from "../../../src/user/user.model";
+import { ForbiddenError } from "../../../src/shared/errors/forbidden.error";
+import { RoleService } from "../../../src/role/role.service";
 
 
 describe("User Service", () => {
@@ -102,10 +104,10 @@ describe("User Service", () => {
 
         it("should throw UnAuthorizedError if user does not exist", async () => {
             const findByEmailStub = sandbox.stub(UserRepo, "findByEmail").resolves(undefined);
-    
+
             await expect(UserService.login(loginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
             expect(findByEmailStub).to.be.calledOnce;
-            
+
         })
 
 
@@ -186,7 +188,7 @@ describe("User Service", () => {
             const findByOauthIdStub = sandbox.stub(UserRepo, "findByOauthId").resolves(user)
             const updateStub = sandbox.stub(UserRepo, "update").resolves(user)
             const insertStub = sandbox.stub(UserRepo, "insert").resolves();
-            
+
 
             const promise = UserService.oauthLogin(oauthLoginDTO)
             await expect(promise).to.be.fulfilled
@@ -207,17 +209,17 @@ describe("User Service", () => {
     describe("Generate Verification Token", () => {
 
         it("should throw NotFoundError if user is not found", async () => {
-            const findAccountStub = sandbox.stub(UserRepo, "findById").resolves(undefined);
+            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(undefined);
 
             await expect(UserService.generateVerificationTokenForUser(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.USER_NOT_FOUND)
-            expect(findAccountStub).to.be.calledOnce
+            expect(findUserStub).to.be.calledOnce
         })
 
         it("should throw ConflictError if user is already verified", async () => {
-            const findAccountStub = sandbox.stub(UserRepo, "findById").resolves(user);
+            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(user);
 
             await expect(UserService.generateVerificationTokenForUser(1)).to.be.eventually.rejectedWith(ConflictError, MessageUtil.USER_ALREADY_VERIFIED)
-            expect(findAccountStub).to.be.calledOnce
+            expect(findUserStub).to.be.calledOnce
         })
 
         it("should create a 4 digit verification token ", async () => {
@@ -287,13 +289,13 @@ describe("User Service", () => {
                 ...verificationToken, expiresOn: date.getTime()
             });
 
-            const findAccountStub = sandbox.stub(UserRepo, "findById").resolves(user);
-            const updateAccountStub = sandbox.stub(UserRepo, "update").resolves(user);
+            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(user);
+            const updateUserStub = sandbox.stub(UserRepo, "update").resolves(user);
             const removeTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves(verificationToken);
 
             await expect(UserService.verifyUser(token)).to.be.eventually.fulfilled;
-            expect(findAccountStub).to.have.been.calledOnce;
-            expect(updateAccountStub).to.have.been.calledOnce;
+            expect(findUserStub).to.have.been.calledOnce;
+            expect(updateUserStub).to.have.been.calledOnce;
             expect(removeTokenStub).to.be.calledOnce;
         })
     })
@@ -301,10 +303,10 @@ describe("User Service", () => {
     describe("Generate Reset Password Token", () => {
 
         it("should throw NotFoundError if user is not found", async () => {
-            const findAccountStub = sandbox.stub(UserRepo, "findById").resolves(undefined)
+            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(undefined)
 
             await expect(UserService.generateResetPasswordTokenForUser(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.USER_NOT_FOUND)
-            expect(findAccountStub).to.be.calledOnce
+            expect(findUserStub).to.be.calledOnce
         })
 
         it("should create a 4 digit reset password token", async () => {
@@ -389,13 +391,13 @@ describe("User Service", () => {
 
             sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves({ ...resetPasswordToken, expiresOn: date.getTime() });
 
-            const findAccountStub = sandbox.stub(UserRepo, "findById").resolves(user);
-            const updateAccountStub = sandbox.stub(UserRepo, "update").resolves(user);
+            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(user);
+            const updateUserStub = sandbox.stub(UserRepo, "update").resolves(user);
             const hashPasswordStub = sandbox.stub(PasswordHasherUtil, "hashPassword").resolves(faker.random.uuid());
 
             await expect(UserService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.fulfilled;
-            expect(findAccountStub).to.be.calledOnce;
-            expect(updateAccountStub).to.be.calledOnce;
+            expect(findUserStub).to.be.calledOnce;
+            expect(updateUserStub).to.be.calledOnce;
             expect(hashPasswordStub).to.be.calledOnce;
         })
     })
@@ -405,28 +407,28 @@ describe("User Service", () => {
             const accountOne: User = {
                 ...user,
                 roles: [
-                    {...role, id: 5}
+                    { ...role, id: 5 }
                 ]
             };
 
             const accountTwo: User = {
                 ...user,
                 roles: [
-                    {...role, id: 3}
+                    { ...role, id: 3 }
                 ]
             };
 
             const accountThree: User = {
                 ...user,
                 roles: [
-                    {...role, id: 5}
+                    { ...role, id: 5 }
                 ]
             };
-            
+
 
             sandbox.stub(UserRepo, "findAll").resolves([accountOne, accountTwo, accountThree])
 
-            const promise = UserService.findUsersForRole({...role, id: 5});
+            const promise = UserService.findUsersForRole({ ...role, id: 5 });
             await expect(promise).to.be.eventually.fulfilled;
             expect(await promise).to.have.length(2);
         })
@@ -435,30 +437,186 @@ describe("User Service", () => {
     describe("Has permission", () => {
         it("should return false if roles length is less than 1", async () => {
 
-            expect(UserService.hasPermissionTo("", { ...user, roles: [] })).to.be.false;
+            expect(UserService.hasPermissionTo({
+                permission: "",
+                user: { ...user, roles: [] }
+            })).to.be.false;
 
         })
 
         it("should return false if user does not have permission", async () => {
-        
-            expect(UserService.hasPermissionTo(permissionContants.READ_ROLES, { ...user, roles: [role] })).to.be.false;
+
+            expect(UserService.hasPermissionTo({
+                permission: permissionContants.READ_ROLES, 
+                user: { ...user, roles: [role] }
+            })).to.be.false;
 
         })
 
         it("should return true if user has permission", async () => {
             const permissionName = permissionContants.READ_ROLES;
 
-            expect(UserService.hasPermissionTo(permissionName, {
-                ...user,
-                roles: [
-                    {
-                        ...role, permissions: [
-                            { ...permission, name: permissionName }
-                        ]
-                    }
-                ]
+            expect(UserService.hasPermissionTo({
+                permission: permissionName, 
+                user: {
+                    ...user,
+                    roles: [
+                        {
+                            ...role, permissions: [
+                                { ...permission, name: permissionName }
+                            ]
+                        }
+                    ]
+                }
             })).to.be.true;
 
         })
+    })
+
+    describe("Get Profile", () => {
+        it("should throw ForbiddenError if userId does not belong to the current user and does not have permission to view other's profile", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(false);
+
+            await expect(UserService.getProfile({
+                userId: 12,
+                currentUser: { ...user, id: 3 }
+            })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+        })
+
+        it("should successfully return user's profile if the userId belongs to the current user", async () => {
+            const userId = 10;
+            const findByIdStub = sandbox.stub(UserRepo, "findById").resolves(user)
+
+            const promise = UserService.getProfile({
+                userId: userId, 
+                currentUser: { ...user, id: userId }
+            });
+            await expect(promise).to.be.eventually.fulfilled;
+
+            expect(await promise).to.be.not.undefined;
+            expect(findByIdStub).to.be.calledOnce;
+        })
+
+        it("should successfully return user's profile if the userId does not belong to the current user, but has permission to view other's profile", async () => {
+            const findByIdStub = sandbox.stub(UserRepo, "findById").resolves(user)
+            sandbox.stub(UserService, "hasPermissionTo").returns(true);
+
+            const promise = UserService.getProfile({
+                userId: 12, 
+                currentUser: { ...user, id: 27 }
+            });
+            await expect(promise).to.be.eventually.fulfilled;
+
+            expect(await promise).to.be.not.undefined;
+            expect(findByIdStub).to.be.calledOnce;
+        })
+    })
+
+    describe("Assign role to user", () => {
+        it("should throw ForbiddenError if user does not have permission to assign roles to users", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(false);
+
+            await expect(UserService.assignRoleToUser({
+                roleId: 1,
+                userId: 5,
+                currentUser: user
+            })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+        })
+
+        it("should throw NotFoundError if role to assign does not exist", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(true);
+            const findRoleStub = sandbox.stub(RoleService, "findById").resolves(undefined);
+
+            await expect(UserService.assignRoleToUser({
+                roleId: 1,
+                userId: 4, 
+                currentUser: user
+            })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ROLE_NOT_FOUND);
+
+            expect(findRoleStub).to.be.calledOnce;
+        })
+
+        it("should throw NotFoundError if user to assign to does not exist", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(true);
+            sandbox.stub(RoleService, "findById").resolves(role);
+            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(undefined);
+
+            await expect(UserService.assignRoleToUser({
+                roleId: 1,
+                userId: 4, 
+                currentUser: user
+            })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.USER_NOT_FOUND);
+
+            expect(findUserStub).to.be.calledOnce;
+        });
+
+        it("should successfully assign role to user", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(true);
+            sandbox.stub(RoleService, "findById").resolves(role);
+            sandbox.stub(UserRepo, "findById").resolves(user);
+            const updateUserStub = sandbox.stub(UserRepo, "update").resolves(user);
+
+            await expect(UserService.assignRoleToUser({
+                roleId: 1,
+                userId: 4, 
+                currentUser: user
+            })).to.be.eventually.fulfilled;
+
+            expect(updateUserStub).to.be.calledOnce;
+        });
+    })
+
+    describe("Unassign role from user", () => {
+        it("should throw ForbiddenError if user does not have permission to unassign roles from users", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(false);
+
+            await expect(UserService.unassignRoleFromUser({
+                roleId: 1,
+                userId: 5,
+                currentUser: user
+            })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+        })
+
+        it("should throw NotFoundError if role to assign does not exist", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(true);
+            const findRoleStub = sandbox.stub(RoleService, "findById").resolves(undefined);
+
+            await expect(UserService.unassignRoleFromUser({
+                roleId: 1,
+                userId: 4, 
+                currentUser: user
+            })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ROLE_NOT_FOUND);
+
+            expect(findRoleStub).to.be.calledOnce;
+        })
+
+        it("should throw NotFoundError if user to assign to does not exist", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(true);
+            sandbox.stub(RoleService, "findById").resolves(role);
+            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(undefined);
+
+            await expect(UserService.unassignRoleFromUser({
+                roleId: 1,
+                userId: 4, 
+                currentUser: user
+            })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.USER_NOT_FOUND);
+
+            expect(findUserStub).to.be.calledOnce;
+        });
+
+        it("should successfully assign role to user", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(true);
+            sandbox.stub(RoleService, "findById").resolves(role);
+            sandbox.stub(UserRepo, "findById").resolves(user);
+            const updateUserStub = sandbox.stub(UserRepo, "update").resolves(user);
+
+            await expect(UserService.unassignRoleFromUser({
+                roleId: 1,
+                userId: 4, 
+                currentUser: user
+            })).to.be.eventually.fulfilled;
+
+            expect(updateUserStub).to.be.calledOnce;
+        });
     })
 })
