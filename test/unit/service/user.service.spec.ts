@@ -512,6 +512,18 @@ describe("User Service", () => {
         })
     })
 
+    describe("Update Profile", () => {
+        it("should throw ForbiddenError if userId does not belong to the current user and does not have permission to update other's profile", async () => {
+            sandbox.stub(UserService, "hasPermissionTo").returns(false);
+
+            await expect(UserService.getProfile({
+                userId: 12,
+                currentUser: { ...user, id: 3 }
+            })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
+        })
+
+    })
+
     describe("Assign role to user", () => {
         it("should throw ForbiddenError if user does not have permission to assign roles to users", async () => {
             sandbox.stub(UserService, "hasPermissionTo").returns(false);

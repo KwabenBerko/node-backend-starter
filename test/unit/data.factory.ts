@@ -10,6 +10,7 @@ import { Role } from "../../src/role/role.model";
 import { CreateRoleDTO } from "../../src/role/dto/create-role.dto";
 import { Permission } from "../../src/role/permission.model";
 import { ModifyRoleDTO } from "../../src/role/dto/modify-role.dto";
+import { FileDTO } from "../../src/shared/dto/file.dto";
 
 const password = faker.internet.password();
 const phoneNumber = faker.phone.phoneNumber("+233#########");
@@ -98,6 +99,11 @@ const modifyRoleDTO = new ModifyRoleDTO({
     permissionIds: [7, 9, 2, 1]
 });
 
+const fileDTO = new FileDTO({
+    name: "cat.png",
+    data: Buffer.from("")
+})
+
 export {
     faker,
     user,
@@ -110,5 +116,6 @@ export {
     permission,
     role,
     createRoleDTO,
-    modifyRoleDTO
+    modifyRoleDTO,
+    fileDTO
 }

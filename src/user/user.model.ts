@@ -15,6 +15,7 @@ export class User {
     id: number;
     oauthId?: string
     oauthProvider?: OauthProvider;
+    pictureUrl?: string;
     firstName: string;
     lastName: string;
     gender?: Gender;

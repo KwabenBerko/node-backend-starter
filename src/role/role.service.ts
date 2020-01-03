@@ -9,7 +9,6 @@ import { NotFoundError } from "../shared/errors/not-found.error";
 import { User } from "../user/user.model";
 import { UserService } from "../user/user.service";
 import { permissionContants } from "../shared/util/constant.util";
-import { ForbiddenError } from "../shared/errors/forbidden.error";
 import { ModifyRoleDTO } from "./dto/modify-role.dto";
 import { Permission } from "./permission.model";
 

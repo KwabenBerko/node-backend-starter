@@ -112,25 +112,6 @@ export namespace UserService {
 
     }
 
-    export const getProfile = async (
-        data: {
-            userId: number, 
-            currentUser: User
-        }
-    ): Promise<User> => {
-
-        if(data.userId == data.currentUser.id || hasPermissionTo({
-            permission: permissionContants.READ_USERS, 
-            user: data.currentUser
-        })){
-            const user = await UserRepo.findById(data.userId);
-            return user;
-        }
-
-        throw new ForbiddenError();
-        
-    }
-
     export const oauthLogin = async (dto: OauthLoginDTO): Promise<User> => {
         if (!(dto.oauthId && dto.oauthProvider && dto.firstName && dto.lastName)) {
             throw new BadRequestError();
@@ -346,6 +327,34 @@ export namespace UserService {
 
         user.roles = user.roles.filter(r => r.id !== role.id);
         return await UserRepo.update(user);
+    }
+
+    export const getProfile = async (
+        data: {
+            userId: number, 
+            currentUser: User
+        }
+    ): Promise<User> => {
+
+        if(data.userId == data.currentUser.id || hasPermissionTo({
+            permission: permissionContants.READ_USERS, 
+            user: data.currentUser
+        })){
+            const user = await UserRepo.findById(data.userId);
+            return user;
+        }
+
+        throw new ForbiddenError();
+        
+    }
+
+    export const updateProfile = async (
+        data: {
+            userId: number,
+            currentUser: User,
+        }
+    ): Promise<User> => {
+        throw new Error();
     }
 
 }

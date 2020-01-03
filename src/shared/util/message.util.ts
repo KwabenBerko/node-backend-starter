@@ -1,7 +1,7 @@
 
 export namespace MessageUtil {
 
-    //user
+    //USER
     export const INVALID_REQUEST_DATA = "One or more data is missing in the request.";
     export const INVALID_FIRST_NAME = "Invalid first name.";
     export const INVALID_LAST_NAME = "Invalid last name.";
@@ -28,5 +28,10 @@ export namespace MessageUtil {
     export const PERMISSION_NOT_FOUND = "Permission not found.";
     export const PERMISSION_DENIED = "You do not have permission to perform this operation. Kindly contact an administrator.";
     export const ROLE_ALREADY_EXISTS = "An role with this name already exists.";
+
+
+    //FILE UTIL
+    export const INVALID_FILE_NAME = "File name must have an extension";
+    export const INVALID_FILE_SIZE = "File size must be at most 4MB";
 }
 
