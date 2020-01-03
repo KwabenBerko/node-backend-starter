@@ -2,7 +2,7 @@ import { Role } from "./role.model";
 import { CreateRoleDTO } from "./dto/create-role.dto";
 import { BadRequestError } from "../shared/errors/bad-request.error";
 import { RoleRepo } from "./role.repository";
-import { PermissionRepo } from "../permission/permission.repository";
+import { PermissionRepo } from "./permission.repository";
 import { MessageUtil } from "../shared/util/message.util";
 import { ConflictError } from "../shared/errors/conflict.error";
 import { NotFoundError } from "../shared/errors/not-found.error";
@@ -11,7 +11,7 @@ import { UserService } from "../user/user.service";
 import { permissionContants } from "../shared/util/constant.util";
 import { ForbiddenError } from "../shared/errors/forbidden.error";
 import { ModifyRoleDTO } from "./dto/modify-role.dto";
-import { Permission } from "../permission/permission.model";
+import { Permission } from "./permission.model";
 
 export namespace RoleService {
 
@@ -28,19 +28,14 @@ export namespace RoleService {
         return await RoleRepo.findById(id);
     }
 
-    export const findAll = async (user: User): Promise<Role[]> => {
-        if(!UserService.hasPermissionTo(permissionContants.READ_ROLES, user)){
-            throw new ForbiddenError();
-        }
-
-        return RoleRepo.findAll();
+    export const findAll = async (currentUser: User): Promise<Role[]> => {
+        UserService.hasPermissionToOrThrow(permissionContants.READ_ROLES, currentUser)
+        return RoleRepo.findAll();``
     }
 
-    export const add = async (dto: CreateRoleDTO, user: User):Promise<Role> => {
+    export const add = async (dto: CreateRoleDTO, currentUser: User):Promise<Role> => {
 
-        if(!UserService.hasPermissionTo(permissionContants.ADD_ROLES, user)){
-            throw new ForbiddenError();
-        }
+        UserService.hasPermissionToOrThrow(permissionContants.ADD_ROLES, currentUser)
 
         if(!(dto.name && dto.permissionIds)){
             throw new BadRequestError();
@@ -61,11 +56,9 @@ export namespace RoleService {
         
     }
 
-    export const modify = async (id: number, dto: ModifyRoleDTO, user: User): Promise<Role> => {
+    export const modify = async (id: number, dto: ModifyRoleDTO, currentUser: User): Promise<Role> => {
 
-        if(!UserService.hasPermissionTo(permissionContants.MODIFY_ROLES, user)){
-            throw new ForbiddenError();
-        }
+        UserService.hasPermissionToOrThrow(permissionContants.MODIFY_ROLES, currentUser)
 
         if(!(dto.name && dto.permissionIds)){
             throw new BadRequestError();
@@ -83,10 +76,8 @@ export namespace RoleService {
         return await RoleRepo.update(role);
     }
 
-    export const remove = async (roleId: number, user: User): Promise<Role> => {
-        if(!UserService.hasPermissionTo(permissionContants.DELETE_ROLES, user)){
-            throw new ForbiddenError();
-        }
+    export const remove = async (roleId: number, currentUser: User): Promise<Role> => {
+        UserService.hasPermissionToOrThrow(permissionContants.DELETE_ROLES, currentUser)
 
         const role = await findByIdOrThrow(roleId);
         const accounts = await UserService.findUsersForRole(role);
@@ -96,6 +87,7 @@ export namespace RoleService {
         return RoleRepo.remove(role);
     }
 
+    //Should we move into the permission service??
     const findPermissions = async (permissionIds: number[]): Promise<Permission[]> => {
         return await Promise.all(
             permissionIds.map(async permissionId => {

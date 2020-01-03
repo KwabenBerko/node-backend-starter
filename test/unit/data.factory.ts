@@ -8,7 +8,7 @@ import { OauthLoginDTO } from "../../src/user/dto/oauth-login.dto";
 import { LoginDTO } from "../../src/user/dto/login.dto";
 import { Role } from "../../src/role/role.model";
 import { CreateRoleDTO } from "../../src/role/dto/create-role.dto";
-import { Permission } from "../../src/permission/permission.model";
+import { Permission } from "../../src/role/permission.model";
 import { ModifyRoleDTO } from "../../src/role/dto/modify-role.dto";
 
 const password = faker.internet.password();
@@ -84,8 +84,8 @@ permission.id = faker.random.number(3);
 
 const role = new Role("Super Administrator", [permission]);
 role.id = faker.random.number(5);
-role.createdOn = faker.date.past().getTime();
-role.modifiedOn = faker.date.past().getTime();
+role.createdAt = faker.date.past().getTime();
+role.modifiedAt = faker.date.past().getTime();
 
 const createRoleDTO = new CreateRoleDTO({
     name: "Basic",

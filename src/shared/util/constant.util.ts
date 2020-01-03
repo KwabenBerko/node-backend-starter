@@ -1,6 +1,7 @@
 export const permissionContants = {
-    //User
-    READ_OWN_PROFILE: "READ_OWN_PROFILE",
+    //Users
+    READ_USERS: "READ_USERS",
+
 
     //Roles
     READ_ROLES: "READ_ROLES",
@@ -8,5 +9,5 @@ export const permissionContants = {
     MODIFY_ROLES: "MODIFY_ROLES",
     DELETE_ROLES: "DELETE_ROLES",
     ASSIGN_ROLES_TO_USERS: "ASSIGN_ROLES_TO_USERS",
-    UNASSIGN_ROLES_TO_USERS: "UNASSIGN_ROLES_TO_USERS"
+    UNASSIGN_ROLES_FROM_USERS: "UNASSIGN_ROLES_FROM_USERS"
 }

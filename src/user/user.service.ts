@@ -18,6 +18,9 @@ import { ResetPasswordToken } from "./reset-password-token.model";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 import { UnAuthorizedError } from "../shared/errors/unauthorized.error";
 import { Role } from "../role/role.model";
+import { permissionContants } from "../shared/util/constant.util";
+import { ForbiddenError } from "../shared/errors/forbidden.error";
+import { RoleService } from "../role/role.service";
 
 
 
@@ -25,8 +28,21 @@ const findByEmail = async (email: string): Promise<User> => {
     return UserRepo.findByEmail(email);
 }
 
+const findById = async (id: number): Promise<User> => {
+    return UserRepo.findById(id);
+}
+
+const findByIdOrThrow = async (id: number): Promise<User> => {
+    const user = await findById(id);
+    if(!user){
+        throw new NotFoundError(MessageUtil.USER_NOT_FOUND);
+    }
+
+    return user;
+}
 
 export namespace UserService {
+
     export const register = async (dto: RegisterUserDTO): Promise<User> => {
         if (!(dto.firstName && dto.lastName && dto.gender && dto.email && dto.phoneNumber && dto.password && dto.confirmPassword)) {
             throw new BadRequestError();
@@ -60,11 +76,6 @@ export namespace UserService {
             throw new BadRequestError(MessageUtil.PASSWORDS_DO_NOT_MATCH)
         }
 
-        // if(dto.roleIds){
-        //     if(dto.roleIds.length < 1){
-
-        //     }
-        // }
 
         if (await findByEmail(dto.email)) {
             throw new ConflictError(MessageUtil.USER_ALREADY_EXISTS)
@@ -99,6 +110,17 @@ export namespace UserService {
         
         return UserRepo.update(user);
 
+    }
+
+    export const getProfile = async (userId: number, currentUser: User): Promise<User> => {
+
+        if(userId == currentUser.id || hasPermissionTo(permissionContants.READ_USERS, currentUser)){
+            const user = await UserRepo.findById(userId);
+            return user;
+        }
+
+        throw new ForbiddenError();
+        
     }
 
     export const oauthLogin = async (dto: OauthLoginDTO): Promise<User> => {
@@ -140,10 +162,7 @@ export namespace UserService {
 
     export const generateVerificationTokenForUser = async (userId: number) => {
 
-        const user = await UserRepo.findById(userId);
-        if (!user) {
-            throw new NotFoundError(MessageUtil.USER_NOT_FOUND);
-        }
+        const user = await findByIdOrThrow(userId);
 
         if (user.verifiedAt) {
             throw new ConflictError(MessageUtil.USER_ALREADY_VERIFIED);
@@ -190,10 +209,7 @@ export namespace UserService {
 
     export const generateResetPasswordTokenForUser = async (userId: number) => {
 
-        const user = await UserRepo.findById(userId);
-        if (!user) {
-            throw new NotFoundError(MessageUtil.USER_NOT_FOUND);
-        }
+        const user = await findByIdOrThrow(userId);
 
         const resetPasswordToken = await ResetPasswordTokenRepo.findByUserId(userId);
         if (resetPasswordToken) {
@@ -267,6 +283,46 @@ export namespace UserService {
 
         return true;
     }
+
+    export const hasPermissionToOrThrow = (permission: string, user: User) => {
+        if(!hasPermissionTo(permission, user)){
+            throw new ForbiddenError();
+        }
+    }
+
+    export const assignRoleToUser = async (
+        data: {
+            roleId: number, 
+            userId: number, 
+            currentUser: User
+        }
+    ) => {
+        hasPermissionToOrThrow(permissionContants.ASSIGN_ROLES_TO_USERS, data.currentUser);
+
+        const role = await RoleService.findByIdOrThrow(data.roleId);
+        const user = await findByIdOrThrow(data.userId);
+
+        user.roles.push(role);
+        return await UserRepo.update(user);
+    }
+
+
+    export const unassignRoleFromUser = async (
+        data: {
+            roleId: number, 
+            userId: number, 
+            currentUser: User
+        }
+    ) => {
+        hasPermissionToOrThrow(permissionContants.UNASSIGN_ROLES_FROM_USERS, data.currentUser);
+
+        const role = await RoleService.findByIdOrThrow(data.roleId);
+        const user = await findByIdOrThrow(data.userId);
+
+        user.roles = user.roles.filter(r => r.id !== role.id);
+        return await UserRepo.update(user);
+    }
+
 }
 
 const validateUser = (user: User) => {
