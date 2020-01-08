@@ -210,7 +210,7 @@ export namespace UserService {
         const newResetPasswordToken = new ResetPasswordToken({
             userId: user.id,
             token: token,
-            expiresOn: moment().add(30, "minutes").toDate().getMilliseconds()
+            expiresOn: moment().add(30, "minutes").toISOString()
         });
 
         await ResetPasswordTokenRepo.insert(newResetPasswordToken);

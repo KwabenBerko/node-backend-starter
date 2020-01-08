@@ -1,6 +1,10 @@
 
 export namespace MessageUtil {
 
+    //GENERAL
+    export const ROUTE_NOT_FOUND = "API endpoint not found."
+    export const INTERNAL_SERVER_ERROR = "Internal server error."
+
     //USER
     export const INVALID_REQUEST_DATA = "One or more data is missing in the request.";
     export const INVALID_FIRST_NAME = "Invalid first name.";
