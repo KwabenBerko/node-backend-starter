@@ -3,17 +3,15 @@ import moment from "moment";
 import { ValidationUtil } from "../shared/util/validation.util";
 import { PasswordHasherUtil } from "../shared/util/password-hasher.util";
 import { MessageUtil } from "../shared/util/message.util";
-import { UserRepo } from "./user.repository";
-import { VerificationTokenRepo } from "./verification-token.repository";
 import { ResetPasswordTokenRepo } from "./reset-password-token.repository"
 import { RegisterUserDTO } from "./dto/register-user.dto";
 import { LoginDTO } from "./dto/login.dto";
 import { OauthLoginDTO } from "./dto/oauth-login.dto";
-import { User, Gender, OauthProvider } from "./user.model";
+import { UserModel, Gender, OauthProvider } from "./user.model";
 import { BadRequestError } from "../shared/errors/bad-request.error";
 import { ConflictError } from "../shared/errors/conflict.error";
 import { NotFoundError } from "../shared/errors/not-found.error";
-import { VerificationToken } from "./verification-token.model";
+import { VerificationTokenModel } from "./verification-token.model";
 import { ResetPasswordToken } from "./reset-password-token.model";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 import { UnAuthorizedError } from "../shared/errors/unauthorized.error";
@@ -22,19 +20,17 @@ import { permissionContants } from "../shared/util/constant.util";
 import { ForbiddenError } from "../shared/errors/forbidden.error";
 import { RoleService } from "../role/role.service";
 
-
-
-const findByEmail = async (email: string): Promise<User> => {
-    return UserRepo.findByEmail(email);
+const findByEmail = async (email: string): Promise<UserModel> => {
+    return await UserModel.query().findOne({ email })
 }
 
-const findById = async (id: number): Promise<User> => {
-    return UserRepo.findById(id);
+const findById = async (id: number): Promise<UserModel> => {
+    return await UserModel.query().findById(id);
 }
 
-const findByIdOrThrow = async (id: number): Promise<User> => {
+const findByIdOrThrow = async (id: number): Promise<UserModel> => {
     const user = await findById(id);
-    if(!user){
+    if (!user) {
         throw new NotFoundError(MessageUtil.USER_NOT_FOUND);
     }
 
@@ -43,7 +39,7 @@ const findByIdOrThrow = async (id: number): Promise<User> => {
 
 export namespace UserService {
 
-    export const register = async (dto: RegisterUserDTO): Promise<User> => {
+    export const register = async (dto: RegisterUserDTO): Promise<UserModel> => {
         if (!(dto.firstName && dto.lastName && dto.gender && dto.email && dto.phoneNumber && dto.password && dto.confirmPassword)) {
             throw new BadRequestError();
         }
@@ -81,20 +77,19 @@ export namespace UserService {
             throw new ConflictError(MessageUtil.USER_ALREADY_EXISTS)
         }
 
-        const newUser = new User({
-            firstName: dto.firstName, 
-            lastName: dto.lastName
-        });
+        const newUser = new UserModel();
+        newUser.firstName = dto.firstName,
+            newUser.lastName = dto.lastName
         newUser.gender = Gender[dto.gender.toUpperCase() as keyof typeof Gender]
         newUser.email = dto.email;
         newUser.phoneNumber = dto.phoneNumber;
         newUser.password = await PasswordHasherUtil.hashPassword(dto.password);
 
-        return await UserRepo.insert(newUser);
+        return await UserModel.query().insert(newUser)
 
     }
 
-    export const login = async (dto: LoginDTO): Promise<User> => {
+    export const login = async (dto: LoginDTO): Promise<UserModel> => {
         if (!(dto.email && dto.password)) {
             throw new BadRequestError()
         }
@@ -106,13 +101,13 @@ export namespace UserService {
         }
 
         validateUser(user);
-        user.lastLoginAt = Date.now();
-        
-        return UserRepo.update(user);
+        user.lastLoginAt = new Date().toISOString();
+
+        return await UserModel.query().patchAndFetchById(user.id, user)
 
     }
 
-    export const oauthLogin = async (dto: OauthLoginDTO): Promise<User> => {
+    export const oauthLogin = async (dto: OauthLoginDTO): Promise<UserModel> => {
         if (!(dto.oauthId && dto.oauthProvider && dto.firstName && dto.lastName)) {
             throw new BadRequestError();
         }
@@ -129,24 +124,24 @@ export namespace UserService {
             throw new BadRequestError(MessageUtil.INVALID_OAUTH_PROVIDER)
         }
 
-        const user = await UserRepo.findByOauthId(dto.oauthId);
+        const lastLoginAt = new Date().toISOString();
+        const user = await UserModel.query().findOne({ oauthId: dto.oauthId });
         if (user) {
             validateUser(user);
-            user.lastLoginAt = Date.now();
-            return UserRepo.update(user);
+            user.lastLoginAt = lastLoginAt;
+            return UserModel.query().patchAndFetchById(user.id, user);
         }
 
         //New Oauth user. Adding
-        const newUser = new User({
-            firstName: dto.firstName, 
-            lastName: dto.lastName
-        });
+        const newUser = new UserModel();
+        newUser.firstName = dto.firstName;
+        newUser.lastName = dto.lastName;
         newUser.oauthId = dto.oauthId;
         newUser.oauthProvider = OauthProvider[dto.oauthProvider.toUpperCase() as keyof typeof OauthProvider];
-        newUser.verifiedAt = Date.now();
-        newUser.lastLoginAt = Date.now();
-        return await UserRepo.insert(newUser)
-       
+        newUser.verifiedAt = new Date().toISOString();
+        newUser.lastLoginAt = lastLoginAt;
+        return await UserModel.query().insert(newUser);
+
     }
 
     export const generateVerificationTokenForUser = async (userId: number) => {
@@ -157,22 +152,21 @@ export namespace UserService {
             throw new ConflictError(MessageUtil.USER_ALREADY_VERIFIED);
         }
 
-        const verificationToken = await VerificationTokenRepo.findByUserId(userId);
+        const verificationToken = await VerificationTokenModel.query().findOne({ userId })
 
         if (verificationToken) {
-            await VerificationTokenRepo.remove(verificationToken);
+            await VerificationTokenModel.query().delete().where(verificationToken);
         }
 
         const token = await generateUniqueVerificationToken()
 
-        const newVerificationToken = new VerificationToken({
-            userId: user.id,
-            token: token,
-            expiresOn: moment().add(1, "hour").toDate().getMilliseconds()
-        });
-        
+        const newVerificationToken = new VerificationTokenModel();
+        newVerificationToken.userId = user.id;
+        newVerificationToken.token = token;
+        newVerificationToken.expiresOn = moment().add(1, "hour").toISOString();
 
-        await VerificationTokenRepo.insert(newVerificationToken);
+
+        await VerificationTokenModel.query().insert(newVerificationToken);
 
         return {
             token: newVerificationToken.token,
@@ -183,17 +177,17 @@ export namespace UserService {
     export const verifyUser = async (token: string): Promise<void> => {
 
         const currentDateTime = moment();
-        const verificationToken = await VerificationTokenRepo.findByToken(token);
+        const verificationToken = await VerificationTokenModel.query().findOne({ token });
 
         if (!verificationToken || currentDateTime.isAfter(moment(verificationToken.expiresOn))) {
             throw new BadRequestError(MessageUtil.INVALID_VERIFICATION_TOKEN);
         }
 
-        const user = await UserRepo.findById(verificationToken.userId);
-        user.verifiedAt = currentDateTime.toDate().getMilliseconds();
+        const user = await UserModel.query().findById(verificationToken.userId);
+        user.verifiedAt = currentDateTime.toISOString();
 
-        await VerificationTokenRepo.remove(verificationToken);
-        await UserRepo.update(user);
+        await VerificationTokenModel.query().delete().where(verificationToken);
+        await UserModel.query().patch(user).where({ id: verificationToken.id });
     }
 
     export const generateResetPasswordTokenForUser = async (userId: number) => {
@@ -210,7 +204,7 @@ export namespace UserService {
         const newResetPasswordToken = new ResetPasswordToken({
             userId: user.id,
             token: token,
-            expiresOn: moment().add(30, "minutes").toDate().getMilliseconds()
+            expiresOn: moment().add(30, "minutes").toISOString()
         });
 
         await ResetPasswordTokenRepo.insert(newResetPasswordToken);
@@ -241,14 +235,14 @@ export namespace UserService {
             throw new BadRequestError(MessageUtil.INVALID_RESET_PASSWORD_TOKEN);
         }
 
-        const user = await UserRepo.findById(resetPasswordToken.userId);
+        const user = await UserModel.query().findById(resetPasswordToken.userId);
         user.password = await PasswordHasherUtil.hashPassword(dto.password);
 
-        await UserRepo.update(user);
+        await UserModel.query().patch(user).where({ id: resetPasswordToken.id });
     }
 
-    export const findUsersForRole = async (role: Role): Promise<User[]> => {
-        const users = (await UserRepo.findAll()).filter(user => {
+    export const findUsersForRole = async (role: Role): Promise<UserModel[]> => {
+        const users = (await UserModel.query()).filter(user => {
             return user.roles.some((r: Role) => role.id == r.id);
         })
         return users;
@@ -256,8 +250,8 @@ export namespace UserService {
 
     export const hasPermissionTo = (
         data: {
-            permission: string, 
-            user: User
+            permission: string,
+            user: UserModel
         }
     ): boolean => {
         if (!data.user || !data.user.roles.length) {
@@ -280,25 +274,25 @@ export namespace UserService {
 
     export const hasPermissionToOrThrow = (
         data: {
-            permission: string, 
-            user: User
+            permission: string,
+            user: UserModel
         }
     ) => {
-        if(!hasPermissionTo(data)){
+        if (!hasPermissionTo(data)) {
             throw new ForbiddenError();
         }
     }
 
     export const assignRoleToUser = async (
         data: {
-            roleId: number, 
-            userId: number, 
-            currentUser: User
+            roleId: number,
+            userId: number,
+            currentUser: UserModel
         }
     ) => {
 
         hasPermissionToOrThrow({
-            permission: permissionContants.ASSIGN_ROLES_TO_USERS, 
+            permission: permissionContants.ASSIGN_ROLES_TO_USERS,
             user: data.currentUser
         });
 
@@ -306,19 +300,19 @@ export namespace UserService {
         const user = await findByIdOrThrow(data.userId);
 
         user.roles.push(role);
-        return await UserRepo.update(user);
+        return await UserModel.query().patchAndFetchById(user.id, user);
     }
 
 
     export const unassignRoleFromUser = async (
         data: {
-            roleId: number, 
-            userId: number, 
-            currentUser: User
+            roleId: number,
+            userId: number,
+            currentUser: UserModel
         }
     ) => {
         hasPermissionToOrThrow({
-            permission: permissionContants.UNASSIGN_ROLES_FROM_USERS, 
+            permission: permissionContants.UNASSIGN_ROLES_FROM_USERS,
             user: data.currentUser
         });
 
@@ -326,40 +320,40 @@ export namespace UserService {
         const user = await findByIdOrThrow(data.userId);
 
         user.roles = user.roles.filter(r => r.id !== role.id);
-        return await UserRepo.update(user);
+        return await UserModel.query().patchAndFetchById(user.id, user);
     }
 
     export const getProfile = async (
         data: {
-            userId: number, 
-            currentUser: User
+            userId: number,
+            currentUser: UserModel
         }
-    ): Promise<User> => {
+    ): Promise<UserModel> => {
 
-        if(data.userId == data.currentUser.id || hasPermissionTo({
-            permission: permissionContants.READ_USERS, 
+        if (data.userId == data.currentUser.id || hasPermissionTo({
+            permission: permissionContants.READ_USERS,
             user: data.currentUser
-        })){
-            const user = await UserRepo.findById(data.userId);
+        })) {
+            const user = await UserModel.query().findById(data.userId);
             return user;
         }
 
         throw new ForbiddenError();
-        
+
     }
 
     export const updateProfile = async (
         data: {
             userId: number,
-            currentUser: User,
+            currentUser: UserModel,
         }
-    ): Promise<User> => {
+    ): Promise<UserModel> => {
         throw new Error();
     }
 
 }
 
-const validateUser = (user: User) => {
+const validateUser = (user: UserModel) => {
     if (!user.enabled) {
         throw new UnAuthorizedError(MessageUtil.USER_DISABLED);
     }
@@ -382,7 +376,7 @@ const generateUniqueResetPasswordToken = async (): Promise<string> => {
 const generateUniqueVerificationToken = async (): Promise<string> => {
     const token = generateToken(4);
 
-    if (await VerificationTokenRepo.findByToken(token)) {
+    if (await VerificationTokenModel.query().findOne({ token })) {
         return generateUniqueVerificationToken();
     }
 

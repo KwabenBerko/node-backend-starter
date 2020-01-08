@@ -1,14 +1,5 @@
 import { Role } from "./role.model";
 
-export interface Options {
-    from: number,
-    to: number,
-    limit: number,
-    skip: number
-    sort: string, //sort=title:asc
-    include: readonly string[] //include=user,car
-}
-
 export namespace RoleRepo {
 
     export const findAll = (): Promise<Role[]> => {

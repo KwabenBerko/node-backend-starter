@@ -1,8 +1,8 @@
-import { expect } from "../setup";
+import { expect } from "../../setup";
 import { FileService } from "../../../src/shared/service/file.service"
 import { BadRequestError } from "../../../src/shared/errors/bad-request.error";
 import { MessageUtil } from "../../../src/shared/util/message.util";
-import { fileDTO } from "../data.factory";
+import { fileDTO } from "../../data.factory";
 import { FileDTO } from "../../../src/shared/dto/file.dto";
 
 

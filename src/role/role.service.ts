@@ -6,7 +6,7 @@ import { PermissionRepo } from "./permission.repository";
 import { MessageUtil } from "../shared/util/message.util";
 import { ConflictError } from "../shared/errors/conflict.error";
 import { NotFoundError } from "../shared/errors/not-found.error";
-import { User } from "../user/user.model";
+import { UserModel } from "../user/user.model";
 import { UserService } from "../user/user.service";
 import { permissionContants } from "../shared/util/constant.util";
 import { ModifyRoleDTO } from "./dto/modify-role.dto";
@@ -27,7 +27,7 @@ export namespace RoleService {
         return await RoleRepo.findById(id);
     }
 
-    export const findAll = async (currentUser: User): Promise<Role[]> => {
+    export const findAll = async (currentUser: UserModel): Promise<Role[]> => {
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.READ_ROLES, 
             user: currentUser
@@ -35,7 +35,7 @@ export namespace RoleService {
         return RoleRepo.findAll(); ``
     }
 
-    export const add = async (dto: CreateRoleDTO, currentUser: User): Promise<Role> => {
+    export const add = async (dto: CreateRoleDTO, currentUser: UserModel): Promise<Role> => {
 
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.ADD_ROLES,
@@ -61,7 +61,7 @@ export namespace RoleService {
 
     }
 
-    export const modify = async (id: number, dto: ModifyRoleDTO, currentUser: User): Promise<Role> => {
+    export const modify = async (id: number, dto: ModifyRoleDTO, currentUser: UserModel): Promise<Role> => {
 
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.MODIFY_ROLES,
@@ -84,7 +84,7 @@ export namespace RoleService {
         return await RoleRepo.update(role);
     }
 
-    export const remove = async (roleId: number, currentUser: User): Promise<Role> => {
+    export const remove = async (roleId: number, currentUser: UserModel): Promise<Role> => {
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.DELETE_ROLES,
             user: currentUser

@@ -1,5 +1,5 @@
-import { sandbox, expect } from "../setup";
-import { role, createRoleDTO, user, permission, faker, modifyRoleDTO } from "../data.factory";
+import { sandbox, expect } from "../../setup";
+import { role, createRoleDTO, user, permission, faker, modifyRoleDTO } from "../../data.factory";
 import { RoleService } from "../../../src/role/role.service";
 import { MessageUtil } from "../../../src/shared/util/message.util";
 import { CreateRoleDTO } from "../../../src/role/dto/create-role.dto";
