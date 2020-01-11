@@ -1,14 +1,14 @@
 import * as Knex from "knex";
-import { tableConstants } from "../../util/constant.util";
+import { Tables } from "../../util/constant.util";
 
 
 export async function up(knex: Knex): Promise<any> {
-    return knex.schema.createTable(tableConstants.RESET_PASSWORD_TOKENS, table => {
+    return knex.schema.createTable(Tables.RESET_PASSWORD_TOKENS, table => {
         table.increments("id").primary();
         table.integer("user_id")
             .unsigned()
             .references("id")
-            .inTable(tableConstants.USERS)
+            .inTable(Tables.USERS)
             .onDelete("CASCADE")
             .index();
         table.string("token").index();
@@ -18,6 +18,6 @@ export async function up(knex: Knex): Promise<any> {
 
 
 export async function down(knex: Knex): Promise<any> {
-    return knex.schema.dropTableIfExists(tableConstants.RESET_PASSWORD_TOKENS);
+    return knex.schema.dropTableIfExists(Tables.RESET_PASSWORD_TOKENS);
 }
 

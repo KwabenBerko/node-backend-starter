@@ -8,7 +8,7 @@ import { ConflictError } from "../shared/errors/conflict.error";
 import { NotFoundError } from "../shared/errors/not-found.error";
 import { UserModel } from "../user/user.model";
 import { UserService } from "../user/user.service";
-import { permissionContants } from "../shared/util/constant.util";
+import { Permissions } from "../shared/util/constant.util";
 import { ModifyRoleDTO } from "./dto/modify-role.dto";
 import { PermissionModel } from "../permission/permission.model";
 
@@ -29,7 +29,7 @@ export namespace RoleService {
 
     export const findAll = async (currentUser: UserModel): Promise<RoleModel[]> => {
         UserService.hasPermissionToOrThrow({
-            permission: permissionContants.READ_ROLES, 
+            permission: Permissions.READ_ROLES, 
             user: currentUser
         })
         return RoleRepo.findAll(); ``
@@ -38,7 +38,7 @@ export namespace RoleService {
     export const add = async (dto: CreateRoleDTO, currentUser: UserModel): Promise<RoleModel> => {
 
         UserService.hasPermissionToOrThrow({
-            permission: permissionContants.ADD_ROLES,
+            permission: Permissions.ADD_ROLES,
             user: currentUser
         })
 
@@ -66,7 +66,7 @@ export namespace RoleService {
     export const modify = async (id: number, dto: ModifyRoleDTO, currentUser: UserModel): Promise<RoleModel> => {
 
         UserService.hasPermissionToOrThrow({
-            permission: permissionContants.MODIFY_ROLES,
+            permission: Permissions.MODIFY_ROLES,
             user: currentUser
         })
 
@@ -88,7 +88,7 @@ export namespace RoleService {
 
     export const remove = async (roleId: number, currentUser: UserModel): Promise<RoleModel> => {
         UserService.hasPermissionToOrThrow({
-            permission: permissionContants.DELETE_ROLES,
+            permission: Permissions.DELETE_ROLES,
             user: currentUser
         })
 

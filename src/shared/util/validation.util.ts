@@ -1,8 +1,14 @@
 import { PhoneNumberUtil } from "google-libphonenumber";
 
 export namespace ValidationUtil {
-    export const isValidEnum = (enumObject: object, str: string): boolean => {
-        return Object.values(enumObject).some(val => val === str.toLowerCase());
+    export const isValidEnum = (enumObject: any, str: string): boolean => {
+        
+        return Object.values(enumObject).some((val:any) => {
+            if(typeof val == "string"){
+                val = val.toLowerCase();
+            }
+            return val === str.toLowerCase();
+        });
     }
     
     export const isValidEmail = (email: string): boolean => {

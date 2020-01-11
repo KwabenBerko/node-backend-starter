@@ -16,7 +16,7 @@ import { ResetPasswordTokenModel } from "./reset-password-token.model";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 import { UnAuthorizedError } from "../shared/errors/unauthorized.error";
 import { RoleModel } from "../role/role.model";
-import { permissionContants } from "../shared/util/constant.util";
+import { Permissions } from "../shared/util/constant.util";
 import { ForbiddenError } from "../shared/errors/forbidden.error";
 import { RoleService } from "../role/role.service";
 import { UserRepo } from "./user.repository";
@@ -293,7 +293,7 @@ export namespace UserService {
     ) => {
 
         hasPermissionToOrThrow({
-            permission: permissionContants.ASSIGN_ROLES_TO_USERS,
+            permission: Permissions.ASSIGN_ROLES_TO_USERS,
             user: data.currentUser
         });
 
@@ -313,7 +313,7 @@ export namespace UserService {
         }
     ) => {
         hasPermissionToOrThrow({
-            permission: permissionContants.UNASSIGN_ROLES_FROM_USERS,
+            permission: Permissions.UNASSIGN_ROLES_FROM_USERS,
             user: data.currentUser
         });
 
@@ -332,7 +332,7 @@ export namespace UserService {
     ): Promise<UserModel> => {
 
         if (data.userId == data.currentUser.id || hasPermissionTo({
-            permission: permissionContants.READ_USERS,
+            permission: Permissions.READ_USERS,
             user: data.currentUser
         })) {
             const user = await UserRepo.findById(data.userId);

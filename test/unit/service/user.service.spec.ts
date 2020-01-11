@@ -2,7 +2,7 @@ import { sandbox, expect } from "../../setup";
 import { faker, user, registerAccountDTO, loginDTO, oauthLoginDTO, resetPasswordDTO, resetPasswordToken, verificationToken, role, permission } from "../../data.factory";
 import { UserService } from "../../../src/user/user.service";
 import { UserModel } from "../../../src/user/user.model";
-import { permissionContants } from "../../../src/shared/util/constant.util";
+import { Permissions } from "../../../src/shared/util/constant.util";
 import { MessageUtil } from "../../../src/shared/util/message.util";
 import { PasswordHasherUtil } from "../../../src/shared/util/password-hasher.util";
 import { RegisterUserDTO } from "../../../src/user/dto/register-user.dto"
@@ -459,14 +459,14 @@ describe("User Service", () => {
         it("should return false if user does not have permission", async () => {
 
             expect(UserService.hasPermissionTo({
-                permission: permissionContants.READ_ROLES,
+                permission: Permissions.READ_ROLES,
                 user: { ...user, roles: [role] } as UserModel
             })).to.be.false;
 
         })
 
         it("should return true if user has permission", async () => {
-            const permissionName = permissionContants.READ_ROLES;
+            const permissionName = Permissions.READ_ROLES;
 
             expect(UserService.hasPermissionTo({
                 permission: permissionName,

@@ -1,10 +1,10 @@
 import { PermissionModel } from "../permission/permission.model";
 import { Model } from "objection";
-import { tableConstants } from "../shared/util/constant.util";
+import { Tables } from "../shared/util/constant.util";
 
 export class RoleModel extends Model{
 
-    static tableName = tableConstants.ROLES;
+    static tableName = Tables.ROLES;
 
     id!: number;
     name!: string;
@@ -18,12 +18,12 @@ export class RoleModel extends Model{
             modelClass: PermissionModel,
             relation: Model.ManyToManyRelation,
             join:{
-                from: `${tableConstants.ROLES}.id`,
+                from: `${Tables.ROLES}.id`,
                 through: {
-                    from: `${tableConstants.ROLES_PERMISSIONS}.role_id`,
-                    to: `${tableConstants.ROLES_PERMISSIONS}.permission_id`,
+                    from: `${Tables.ROLES_PERMISSIONS}.role_id`,
+                    to: `${Tables.ROLES_PERMISSIONS}.permission_id`,
                 },
-                to: `${tableConstants.PERMISSIONS}.id`
+                to: `${Tables.PERMISSIONS}.id`
             }
         }
     }

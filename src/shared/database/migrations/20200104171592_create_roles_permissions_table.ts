@@ -1,14 +1,14 @@
 import * as Knex from "knex";
-import { tableConstants } from "../../util/constant.util";
+import { Tables } from "../../util/constant.util";
 
 
 export async function up(knex: Knex): Promise<any> {
-    return knex.schema.createTable(tableConstants.ROLES_PERMISSIONS, table => {
+    return knex.schema.createTable(Tables.ROLES_PERMISSIONS, table => {
         table.integer("role_id")
             .notNullable()
             .unsigned()
             .references("id")
-            .inTable(tableConstants.ROLES)
+            .inTable(Tables.ROLES)
             .onDelete("CASCADE");
 
         table
@@ -16,12 +16,12 @@ export async function up(knex: Knex): Promise<any> {
             .notNullable()
             .unsigned()
             .references("id")
-            .inTable(tableConstants.PERMISSIONS);
+            .inTable(Tables.PERMISSIONS);
     })
 }
 
 
 export async function down(knex: Knex): Promise<any> {
-    return knex.schema.dropTableIfExists(tableConstants.ROLES_PERMISSIONS);
+    return knex.schema.dropTableIfExists(Tables.ROLES_PERMISSIONS);
 }
 

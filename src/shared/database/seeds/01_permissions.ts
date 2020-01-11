@@ -1,15 +1,15 @@
 import _ from "lodash";
 import * as Knex from "knex";
-import { tableConstants, permissionContants } from "../../util/constant.util";
+import { Tables, Permissions } from "../../util/constant.util";
 
 export async function seed(knex: Knex): Promise<any> {
 
     let data: any = [];
-    _.forOwn(permissionContants, (value, key) => {
+    _.forOwn(Permissions, (value, key) => {
         return data.push({ name: value });
     });
 
-    await knex(tableConstants.PERMISSIONS).del();
+    await knex(Tables.PERMISSIONS).del();
 
-    return knex(tableConstants.PERMISSIONS).insert(data);
+    return knex(Tables.PERMISSIONS).insert(data);
 };

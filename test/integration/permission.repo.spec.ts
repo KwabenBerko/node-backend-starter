@@ -1,6 +1,6 @@
 import { PermissionRepo } from "../../src/permission/permission.repository"
 import { expect } from "../setup";
-import { permissionContants } from "../../src/shared/util/constant.util";
+import { Permissions } from "../../src/shared/util/constant.util";
 
 describe("Permission Repository", () => {
     it("should find all permissions", async () => {
@@ -17,6 +17,6 @@ describe("Permission Repository", () => {
         const permission = await PermissionRepo.findById(1);
 
         expect(permission).to.be.not.undefined;
-        expect(permission.name).to.be.equal(permissionContants.READ_USERS);
+        expect(permission.name).to.be.equal(Permissions.READ_USERS);
     })
 })

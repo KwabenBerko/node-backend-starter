@@ -35,5 +35,30 @@ export namespace MessageUtil {
     //FILE UTIL
     export const INVALID_FILE_NAME = "File name must have an extension";
     export const INVALID_FILE_SIZE = "File size must be at most 4MB";
+
+    //MAILER UTIL
+    export const UNSUPPORTED_MAIL_TYPE = "Mail type is not supported";
+    export const VERIFY_ACCOUNT_TITLE = "Verify Account";
+    export const VERIFY_ACCOUNT_MESSAGE = function(data: {
+        firstName: string, 
+        link: string
+        companyName: string,
+        expiresInFromNow: string,
+    }): string {
+		return (
+			"Hello " +
+			data.firstName +
+			",\n\n" +
+			"Thank you for signing up with " +
+			data.companyName +
+			". In order to complete your registration, please click the link below or paste into your browser:\n\n" +
+			data.link +
+			"\n\n" +
+			"NB: Please note that your account will be removed if its not confirmed "+ data.expiresInFromNow +".\n"
+		);
+    }
+    
+    export const FORGOT_PASSWORD_TITLE = "Forgot Password";
+
 }
 

@@ -1,6 +1,6 @@
 import { Model } from "objection";
 import { RoleModel } from "../role/role.model";
-import { tableConstants } from "../shared/util/constant.util";
+import { Tables } from "../shared/util/constant.util";
 
 export enum Gender {
     M = "m",
@@ -15,7 +15,7 @@ export enum OauthProvider {
 
 export class UserModel extends Model{
 
-    static tableName = tableConstants.USERS;
+    static tableName = Tables.USERS;
 
     id!: number;
     oauthId?: string
@@ -40,12 +40,12 @@ export class UserModel extends Model{
             modelClass: RoleModel,
             relation: Model.ManyToManyRelation,
             join: {
-                from: `${tableConstants.USERS}.id`,
+                from: `${Tables.USERS}.id`,
                 through: {
-                    from: `${tableConstants.USERS_ROLES}.user_id`,
-                    to: `${tableConstants.USERS_ROLES}.role_id`,
+                    from: `${Tables.USERS_ROLES}.user_id`,
+                    to: `${Tables.USERS_ROLES}.role_id`,
                 },
-                to: `${tableConstants.ROLES}.id`
+                to: `${Tables.ROLES}.id`
             }
         }
     }

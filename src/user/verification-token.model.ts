@@ -1,9 +1,9 @@
 import { Model } from "objection";
-import { tableConstants } from "../shared/util/constant.util";
+import { Tables } from "../shared/util/constant.util";
 
 export class VerificationTokenModel extends Model {
 
-    static tableName = tableConstants.VERIFICATION_TOKENS;
+    static tableName = Tables.VERIFICATION_TOKENS;
 
     id!: number;
     userId!: number;

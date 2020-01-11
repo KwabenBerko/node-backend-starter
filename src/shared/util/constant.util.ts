@@ -1,4 +1,4 @@
-export const permissionContants = {
+export const Permissions = {
     //Users
     READ_USERS: "READ_USERS",
 
@@ -11,7 +11,7 @@ export const permissionContants = {
     UNASSIGN_ROLES_FROM_USERS: "UNASSIGN_ROLES_FROM_USERS"
 }
 
-export const tableConstants = {
+export const Tables = {
     PERMISSIONS: "permissions",
     ROLES: "roles",
     ROLES_PERMISSIONS: "roles_permissions",
@@ -19,4 +19,9 @@ export const tableConstants = {
     USERS_ROLES: "users_roles",
     VERIFICATION_TOKENS: "verification_tokens",
     RESET_PASSWORD_TOKENS: "reset_password_tokens"
+}
+
+export const MailTypes = {
+    ACCOUNT_VERIFICATION: "ACCOUNT_VERIFICATION",
+    FORGOT_PASSWORD: "FORGOT_PASSWORD",
 }

@@ -1,9 +1,9 @@
 import * as Knex from "knex";
-import { tableConstants } from "../../util/constant.util";
+import { Tables } from "../../util/constant.util";
 
 
 export async function up(knex: Knex): Promise<any> {
-    return knex.schema.createTable(tableConstants.PERMISSIONS, table => {
+    return knex.schema.createTable(Tables.PERMISSIONS, table => {
         table.increments("id").primary();
         table.string("name");
     })
@@ -11,6 +11,6 @@ export async function up(knex: Knex): Promise<any> {
 
 
 export async function down(knex: Knex): Promise<any> {
-    return knex.schema.dropTableIfExists(tableConstants.PERMISSIONS);
+    return knex.schema.dropTableIfExists(Tables.PERMISSIONS);
 }
 
