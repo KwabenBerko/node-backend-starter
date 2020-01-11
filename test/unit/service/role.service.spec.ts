@@ -1,5 +1,5 @@
-import { sandbox, expect } from "../setup";
-import { role, createRoleDTO, user, permission, faker, modifyRoleDTO } from "../data.factory";
+import { sandbox, expect } from "../../setup";
+import { role, createRoleDTO, user, permission, faker, modifyRoleDTO } from "../../data.factory";
 import { RoleService } from "../../../src/role/role.service";
 import { MessageUtil } from "../../../src/shared/util/message.util";
 import { CreateRoleDTO } from "../../../src/role/dto/create-role.dto";
@@ -7,7 +7,7 @@ import { BadRequestError } from "../../../src/shared/errors/bad-request.error";
 import { ConflictError } from "../../../src/shared/errors/conflict.error";
 import { RoleRepo } from "../../../src/role/role.repository";
 import { NotFoundError } from "../../../src/shared/errors/not-found.error";
-import { PermissionRepo } from "../../../src/role/permission.repository";
+import { PermissionRepo } from "../../../src/permission/permission.repository";
 import { ForbiddenError } from "../../../src/shared/errors/forbidden.error";
 import { UserService } from "../../../src/user/user.service";
 import { ModifyRoleDTO } from "../../../src/role/dto/modify-role.dto";

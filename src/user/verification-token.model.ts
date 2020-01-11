@@ -1,17 +1,12 @@
-export class VerificationToken {
-    id: number;
-    userId: number;
-    token: string;
-    expiresOn: number;
+import { Model } from "objection";
+import { Tables } from "../shared/util/constant.util";
 
-    constructor(data: {
-        userId: number,
-        token: string,
-        expiresOn: number
-    }){
-        this.id = 0;
-        this.userId = data.userId,
-        this.token = data.token,
-        this.expiresOn = data.expiresOn
-    }
+export class VerificationTokenModel extends Model {
+
+    static tableName = Tables.VERIFICATION_TOKENS;
+
+    id!: number;
+    userId!: number;
+    token!: string;
+    expiresOn!: string;
 }

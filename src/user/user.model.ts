@@ -1,4 +1,6 @@
-import { Role } from "../role/role.model";
+import { Model } from "objection";
+import { RoleModel } from "../role/role.model";
+import { Tables } from "../shared/util/constant.util";
 
 export enum Gender {
     M = "m",
@@ -11,33 +13,40 @@ export enum OauthProvider {
 }
 
 
-export class User {
-    id: number;
+export class UserModel extends Model{
+
+    static tableName = Tables.USERS;
+
+    id!: number;
     oauthId?: string
     oauthProvider?: OauthProvider;
-    firstName: string;
-    lastName: string;
+    pictureUrl?: string;
+    firstName!: string;
+    lastName!: string;
     gender?: Gender;
     email?: string;
     phoneNumber?: string;
     password?: string;
-    roles: Role[];
-    enabled: boolean;
-    verifiedAt?: number;
-    lastLoginAt?: number;
-    createdAt: number;
-    modifiedAt: number;
+    roles: RoleModel[] = [];
+    enabled: boolean = true;
+    verifiedAt?: string;
+    lastLoginAt?: string;
+    createdAt: string = new Date().toISOString();
+    updatedAt: string = new Date().toISOString();
 
-    constructor(data: {
-        firstName: string, 
-        lastName: string
-    }){
-        this.id = 0;
-        this.firstName = data.firstName;
-        this.lastName = data.lastName;
-        this.enabled = true;
-        this.roles = [];
-        this.createdAt = Date.now();
-        this.modifiedAt = Date.now();
+
+    static relationMappings = {
+        roles: {
+            modelClass: RoleModel,
+            relation: Model.ManyToManyRelation,
+            join: {
+                from: `${Tables.USERS}.id`,
+                through: {
+                    from: `${Tables.USERS_ROLES}.user_id`,
+                    to: `${Tables.USERS_ROLES}.role_id`,
+                },
+                to: `${Tables.ROLES}.id`
+            }
+        }
     }
 }

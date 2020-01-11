@@ -1,7 +1,7 @@
 
 export namespace MessageUtil {
 
-    //user
+    //USER
     export const INVALID_REQUEST_DATA = "One or more data is missing in the request.";
     export const INVALID_FIRST_NAME = "Invalid first name.";
     export const INVALID_LAST_NAME = "Invalid last name.";
@@ -28,5 +28,37 @@ export namespace MessageUtil {
     export const PERMISSION_NOT_FOUND = "Permission not found.";
     export const PERMISSION_DENIED = "You do not have permission to perform this operation. Kindly contact an administrator.";
     export const ROLE_ALREADY_EXISTS = "An role with this name already exists.";
+
+    //SMS UTIL
+    export const INVALID_SMS_MESSAGE_LENGTH = "Sms messages must have between 3 and 161 characters";
+
+    //FILE UTIL
+    export const INVALID_FILE_NAME = "File name must have an extension";
+    export const INVALID_FILE_SIZE = "File size must be at most 4MB";
+
+    //MAILER UTIL
+    export const UNSUPPORTED_MAIL_TYPE = "Mail type is not supported";
+    export const VERIFY_ACCOUNT_TITLE = "Verify Account";
+    export const VERIFY_ACCOUNT_MESSAGE = function(data: {
+        firstName: string, 
+        link: string
+        companyName: string,
+        expiresInFromNow: string,
+    }): string {
+		return (
+			"Hello " +
+			data.firstName +
+			",\n\n" +
+			"Thank you for signing up with " +
+			data.companyName +
+			". In order to complete your registration, please click the link below or paste into your browser:\n\n" +
+			data.link +
+			"\n\n" +
+			"NB: Please note that your account will be removed if its not confirmed "+ data.expiresInFromNow +".\n"
+		);
+    }
+    
+    export const FORGOT_PASSWORD_TITLE = "Forgot Password";
+
 }
 

@@ -1,18 +1,31 @@
-import { Permission } from "./permission.model";
+import { PermissionModel } from "../permission/permission.model";
+import { Model } from "objection";
+import { Tables } from "../shared/util/constant.util";
 
-export class Role {
-    id: number;
-    name: string;
-    permissions: Permission[];
-    createdAt: number;
-    modifiedAt: number;
+export class RoleModel extends Model{
 
-    constructor(name: string, permissions: Permission[]){
-        this.id = 0;
-        this.name = name;
-        this.permissions = permissions;
-        this.createdAt = Date.now();
-        this.modifiedAt = Date.now();
+    static tableName = Tables.ROLES;
+
+    id!: number;
+    name!: string;
+    permissions: PermissionModel[] = [];
+    createdAt: string = new Date().toISOString();
+    updatedAt: string = new Date().toISOString();
+
+
+    static relationMappings = {
+        permissions: {
+            modelClass: PermissionModel,
+            relation: Model.ManyToManyRelation,
+            join:{
+                from: `${Tables.ROLES}.id`,
+                through: {
+                    from: `${Tables.ROLES_PERMISSIONS}.role_id`,
+                    to: `${Tables.ROLES_PERMISSIONS}.permission_id`,
+                },
+                to: `${Tables.PERMISSIONS}.id`
+            }
+        }
     }
 }
 

@@ -1,8 +1,8 @@
-import { Permission } from "./permission.model";
+import { PermissionModel } from "./permission.model";
 import { PermissionRepo } from "./permission.repository";
 
 export namespace PermissionService {
-    export const findAll = (): Promise<Permission[]> => {
+    export const findAll = (): Promise<PermissionModel[]> => {
         return PermissionRepo.findAll();
     }
 }
