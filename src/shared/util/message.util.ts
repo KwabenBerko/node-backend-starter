@@ -34,14 +34,14 @@ export namespace MessageUtil {
     export const ROLE_ALREADY_EXISTS = "An role with this name already exists.";
 
     //SMS UTIL
-    export const INVALID_SMS_MESSAGE_LENGTH = "Sms messages must have between 3 and 161 characters";
+    export const INVALID_SMS_MESSAGE_LENGTH = "Sms messages must have between 3 and 161 characters.";
 
     //FILE UTIL
-    export const INVALID_FILE_NAME = "File name must have an extension";
-    export const INVALID_FILE_SIZE = "File size must be at most 4MB";
+    export const INVALID_FILE_NAME = "File name must have an extension.";
+    export const INVALID_FILE_SIZE = "File size must be at most 4MB.";
 
     //MAILER UTIL
-    export const UNSUPPORTED_MAIL_TYPE = "Mail type is not supported";
+    export const UNSUPPORTED_MAIL_TYPE = "Mail type is not supported.";
     export const VERIFY_ACCOUNT_TITLE = "Verify Account";
     export const VERIFY_ACCOUNT_MESSAGE = function(data: {
         firstName: string, 
@@ -64,5 +64,7 @@ export namespace MessageUtil {
     
     export const FORGOT_PASSWORD_TITLE = "Forgot Password";
 
+    //TOKEN UTIL
+    export const INVALID_AUTHORIZATION_TOKEN = "The access token provided is either expired, revoked, malformed, or invalid."
 }
 

@@ -50,6 +50,11 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
     })
 })
 
-server.listen(process.env.PORT, () => {
+server.listen(process.env.PORT || 3000, () => {
     console.log(`Server Running on port: ${(server.address() as AddressInfo)["port"]}`)
 })
+
+
+export {
+    app
+};
