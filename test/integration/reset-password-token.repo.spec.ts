@@ -1,4 +1,4 @@
-import "./db-setup";
+import "../db-setup";
 import {resetPasswordToken, user} from "../data.factory";
 import { ResetPasswordTokenRepo } from "../../src/user/reset-password-token.repository";
 import { expect } from "../setup";

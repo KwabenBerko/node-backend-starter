@@ -8,6 +8,7 @@
     "knex": "ts-node ./node_modules/.bin/knex --knexfile ./src/shared/config/database.config.ts",
     "test:unit": "mocha -r ts-node/register ./test/unit/**/*.spec.ts",
     "test:integration": "mocha -r ts-node/register ./test/integration/**/*.spec.ts",
+    "test:e2e": "mocha -r ts-node/register ./test/e2e/**/*.spec.ts",
     "test:unit:coverage": "nyc npm test:unit"
   },
   "keywords": [],

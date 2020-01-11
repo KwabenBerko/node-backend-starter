@@ -1,4 +1,4 @@
-import "./db-setup";
+import "../db-setup";
 import _ from "lodash";
 import { role, faker } from "../data.factory";
 import { RoleModel } from "../../src/role/role.model";

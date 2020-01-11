@@ -25,6 +25,12 @@ import { RoleModel } from "../../../src/role/role.model";
 
 describe("User Service", () => {
     describe("Register With Email", () => {
+
+        it("should throw BadRequestError if register DTO object is undefined", async () => {
+
+            await expect(UserService.register(undefined! as RegisterUserDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_REQUEST_DATA)
+        })
+
         it("should throw BadRequestError if register DTO object is invalid", async () => {
 
             const dto: Partial<RegisterUserDTO> = { ...registerAccountDTO, email: undefined, password: undefined, confirmPassword: undefined };
@@ -486,6 +492,7 @@ describe("User Service", () => {
     })
 
     describe("Get Profile", () => {
+
         it("should throw ForbiddenError if userId does not belong to the current user and does not have permission to view other's profile", async () => {
             sandbox.stub(UserService, "hasPermissionTo").returns(false);
 

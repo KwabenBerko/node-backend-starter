@@ -27,19 +27,19 @@ describe("Token Util", () => {
             createdToken = TokenUtil.createToken(data)
         })
 
-        it.only("should throw UnAuthorizedError if token is invalid", async () => {
+        it("should throw UnAuthorizedError if token is invalid", async () => {
             await expect(TokenUtil.decodeToken(undefined!)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_AUTHORIZATION_TOKEN)
         })
 
-        it.only("should throw UnAuthorizedError if tokenType is invalid", async () => {
+        it("should throw UnAuthorizedError if tokenType is invalid", async () => {
             await expect(TokenUtil.decodeToken(createdToken.accessToken)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_AUTHORIZATION_TOKEN)
         });
 
-        it.only("should throw UnAuthorizedError if token verification failed", async () => {
+        it("should throw UnAuthorizedError if token verification failed", async () => {
             await expect(TokenUtil.decodeToken(`${createdToken.tokenType} ${faker.random.uuid()}`)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_AUTHORIZATION_TOKEN);
         })
 
-        it.only("should decode token", async () => {
+        it("should decode token", async () => {
             const promise = TokenUtil.decodeToken(`${createdToken.tokenType} ${createdToken.accessToken}`);
     
             await expect(promise).to.be.eventually.fulfilled;

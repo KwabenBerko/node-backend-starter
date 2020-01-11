@@ -9,13 +9,22 @@ import { ForbiddenError } from "./shared/errors/forbidden.error";
 import { BadRequestError } from "./shared/errors/bad-request.error";
 import { ConflictError } from "./shared/errors/conflict.error";
 import { UnAuthorizedError } from "./shared/errors/unauthorized.error";
+import { Model } from "objection";
+import { knex } from "./shared/database";
+import morgan from "morgan";
+import bodyParser from "body-parser";
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-//Setting Up API Controllers
+//Server Middlewares
+app.use(morgan("dev"));
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.json());
+
+//API Controllers
 app.use("/users", UserController);
 
 app.use((req, res, next) => {
@@ -51,10 +60,12 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 })
 
 server.listen(process.env.PORT || 3000, () => {
+    //Bind Database Models
+    Model.knex(knex);
     console.log(`Server Running on port: ${(server.address() as AddressInfo)["port"]}`)
 })
 
 
 export {
-    app
+    server
 };

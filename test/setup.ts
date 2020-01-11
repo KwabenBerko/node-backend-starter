@@ -19,6 +19,7 @@ afterEach(() => {
 
 export {
     expect,
-    sandbox
+    sandbox,
+    chai
 }
 
