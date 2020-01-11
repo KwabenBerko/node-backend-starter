@@ -1,8 +1,8 @@
-import { Role } from "./role.model";
+import { RoleModel } from "./role.model";
 import { CreateRoleDTO } from "./dto/create-role.dto";
 import { BadRequestError } from "../shared/errors/bad-request.error";
 import { RoleRepo } from "./role.repository";
-import { PermissionRepo } from "./permission.repository";
+import { PermissionRepo } from "../permission/permission.repository";
 import { MessageUtil } from "../shared/util/message.util";
 import { ConflictError } from "../shared/errors/conflict.error";
 import { NotFoundError } from "../shared/errors/not-found.error";
@@ -10,11 +10,11 @@ import { UserModel } from "../user/user.model";
 import { UserService } from "../user/user.service";
 import { permissionContants } from "../shared/util/constant.util";
 import { ModifyRoleDTO } from "./dto/modify-role.dto";
-import { Permission } from "./permission.model";
+import { PermissionModel } from "../permission/permission.model";
 
 export namespace RoleService {
 
-    export const findByIdOrThrow = async (id: number): Promise<Role> => {
+    export const findByIdOrThrow = async (id: number): Promise<RoleModel> => {
         const role = await findById(id);
         if (!role) {
             throw new NotFoundError(MessageUtil.ROLE_NOT_FOUND);
@@ -23,11 +23,11 @@ export namespace RoleService {
         return role;
     }
 
-    export const findById = async (id: number): Promise<Role> => {
+    export const findById = async (id: number): Promise<RoleModel> => {
         return await RoleRepo.findById(id);
     }
 
-    export const findAll = async (currentUser: UserModel): Promise<Role[]> => {
+    export const findAll = async (currentUser: UserModel): Promise<RoleModel[]> => {
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.READ_ROLES, 
             user: currentUser
@@ -35,7 +35,7 @@ export namespace RoleService {
         return RoleRepo.findAll(); ``
     }
 
-    export const add = async (dto: CreateRoleDTO, currentUser: UserModel): Promise<Role> => {
+    export const add = async (dto: CreateRoleDTO, currentUser: UserModel): Promise<RoleModel> => {
 
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.ADD_ROLES,
@@ -56,12 +56,14 @@ export namespace RoleService {
         }
 
         const permissions = await findPermissions(dto.permissionIds);
-        const newRole = new Role(dto.name, permissions)
+        const newRole = new RoleModel();
+        newRole.name = dto.name; 
+        newRole.permissions = permissions;
         return await RoleRepo.insert(newRole);
 
     }
 
-    export const modify = async (id: number, dto: ModifyRoleDTO, currentUser: UserModel): Promise<Role> => {
+    export const modify = async (id: number, dto: ModifyRoleDTO, currentUser: UserModel): Promise<RoleModel> => {
 
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.MODIFY_ROLES,
@@ -84,7 +86,7 @@ export namespace RoleService {
         return await RoleRepo.update(role);
     }
 
-    export const remove = async (roleId: number, currentUser: UserModel): Promise<Role> => {
+    export const remove = async (roleId: number, currentUser: UserModel): Promise<RoleModel> => {
         UserService.hasPermissionToOrThrow({
             permission: permissionContants.DELETE_ROLES,
             user: currentUser
@@ -99,7 +101,7 @@ export namespace RoleService {
     }
 
     //Should we move into the permission service??
-    const findPermissions = async (permissionIds: number[]): Promise<Permission[]> => {
+    const findPermissions = async (permissionIds: number[]): Promise<PermissionModel[]> => {
         return await Promise.all(
             permissionIds.map(async permissionId => {
                 const permission = await PermissionRepo.findById(permissionId);

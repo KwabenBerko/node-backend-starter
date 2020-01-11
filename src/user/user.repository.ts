@@ -1,7 +1,5 @@
 import _ from "lodash";
 import { UserModel } from "./user.model";
-import { knex } from "../shared/database";
-import { tableConstants } from "../shared/util/constant.util";
 
 const validFields = [
     "oauthId",
@@ -14,60 +12,44 @@ const validFields = [
     "phoneNumber",
     "password",
     "enabled",
-    "verifiedAt",
-    "lastLoginAt"
+    "roles",
 ]
 
 export namespace UserRepo {
 
     export const findAll = async (): Promise<UserModel[]> => {
-        const users: UserModel[] = [];
-
-        (await knex.select().from(tableConstants.USERS)).forEach(object => {
-            users.push(
-                Object.assign(
-                    Object.create(UserModel.prototype), object
-                )
-            )
-        });
-
-        return users;
+        return UserModel.query().withGraphFetched("roles");
     }
 
     export const findByEmail = async (email: string | undefined): Promise<UserModel> => {
-        return Object.assign(
-            Object.create(UserModel.prototype),
-            await knex.select().from(tableConstants.USERS).where({email}).first()
-        )
+        return UserModel.query()
+            .findOne({ email })
+            .withGraphFetched("roles")
     }
 
     export const findByOauthId = async (oauthId: string | undefined): Promise<UserModel> => {
-        return Object.assign(
-            Object.create(UserModel.prototype),
-            await knex.select().from(tableConstants.USERS).where({oauthId}).first()
-        )
+        return UserModel.query()
+            .findOne({ oauthId })
+            .withGraphFetched("roles")
     }
 
-    export const findById = async (id: number | undefined): Promise<UserModel> => {
-        return Object.assign(
-            Object.create(UserModel.prototype),
-            await knex.select().from(tableConstants.USERS).where({id}).first()
-        );
+    export const findById = async (id: number): Promise<UserModel> => {
+        return UserModel.query()
+            .findOne({ id })
+            .withGraphFetched("roles")
     }
 
     export const update = async (user: Partial<UserModel>): Promise<UserModel> => {
-        await knex.table(tableConstants.USERS).update(
-            _.pick(user, validFields)
-        ).where({id: user.id});
-
-        return findById(user.id)
+        const allowed = _.pick(user, [...validFields, "lastLoginAt", "verifiedAt"]);
+        const updated = await UserModel.query().patchAndFetchById(user.id!, allowed);
+        if(allowed.roles){
+            await updated.$relatedQuery("roles").patch(allowed);
+        }
+        
+        return await findById(updated.id);
     }
 
     export const insert = async (user: UserModel): Promise<UserModel> => {
-        const [id] = await knex(tableConstants.USERS).insert(
-            _.pick(user, validFields)
-        ).returning("id");
-
-        return findById(id);
+        return await UserModel.query().insertGraphAndFetch(_.pick(user, validFields), { relate: true });
     }
 }

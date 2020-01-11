@@ -1,17 +1,12 @@
-export class ResetPasswordToken {
-    id: number;
-    userId: number;
-    token: string;
-    expiresOn: string;
+import { Model } from "objection";
+import { tableConstants } from "../shared/util/constant.util";
 
-    constructor(data: {
-        userId: number,
-        token: string,
-        expiresOn: string
-    }){
-        this.id = 0;
-        this.userId = data.userId,
-        this.token = data.token,
-        this.expiresOn = data.expiresOn
-    }
+export class ResetPasswordTokenModel extends Model {
+
+    static tableName = tableConstants.RESET_PASSWORD_TOKENS;
+
+    id!: number;
+    userId!: number;
+    token!: string;
+    expiresOn!: string;
 }

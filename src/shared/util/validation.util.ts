@@ -32,4 +32,10 @@ export namespace ValidationUtil {
     export const arePasswordsTheSame = (passwordOne: string, passwordTwo: string) => {
         return isValidPassword(passwordOne) && passwordOne === passwordTwo
     }
+
+    export const isValidSmsMessage = (message: string) => {
+        // The maximum length of text message that you can send is 160 characters
+        // https://www.twilio.com/docs/glossary/what-sms-character-limit
+        return message.length >= 3 && message.length <= 160;
+    }
 }

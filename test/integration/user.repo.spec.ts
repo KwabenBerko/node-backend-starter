@@ -1,77 +1,110 @@
-// import moment from "moment";
-// import "./db-setup";
-// import { expect } from "../setup";
-// import { user, faker } from "../data.factory";
-// import { UserRepo } from "../../src/user/user.repository";
-// import { User } from "../../src/user/user.model";
+import moment from "moment";
+import "./db-setup";
+import { expect } from "../setup";
+import { user, faker, role } from "../data.factory";
+import { UserRepo } from "../../src/user/user.repository";
+import { UserModel } from "../../src/user/user.model";
+import { PermissionModel } from "../../src/permission/permission.model";
+import { RoleModel } from "../../src/role/role.model";
 
-// console.log("User Repo");
 
-// describe("User Repository", () => {
-//     it("should save user", async () => {
-//         const newUser: User = {...user};
-//         const savedUser = await UserRepo.insert(newUser);
-//         expect(savedUser).to.be.not.undefined;
-//     })
+describe("User Repository", () => {
 
-//     it("should find all users", async () => {
-//         for(let i = 0; i < 3; i++){
-//             await UserRepo.insert({
-//                 ...user,
-//                 email: faker.internet.email(),
-//                 phoneNumber: faker.phone.phoneNumber()
-//             })
-//         }
+    let newUser: UserModel;
 
-//         const users = await UserRepo.findAll();
+    beforeEach(async () => {
+        const permissions = await PermissionModel.query();
+        const roleOne = await RoleModel.query().insertGraphAndFetch({
+            ...role,
+            id: 1,
+            permissions
+        }, {relate: true})
 
-//         expect(users).to.not.be.undefined;
-//         expect(users).to.be.an("array");
-//         expect(users).to.have.length(3);
-//     })
+        const roleTwo = await RoleModel.query().insertGraphAndFetch({
+            ...role, 
+            id: 2,
+            name: faker.name.jobTitle(),
+            permissions: [...role.permissions.slice(0, 3)]
+        }, {relate: true})
 
-//     it("should find user by oauthId", async () => {
-//         const newUser: User = {...user, oauthId: faker.random.uuid()};
-//         await UserRepo.insert(newUser);
+        newUser = {...user, id: 99999, roles: [roleOne, roleTwo]} as UserModel
+    })
 
-//         const savedUser = await UserRepo.findByOauthId(newUser.oauthId);
+    it("should save user", async () => {
+        const saved = await UserRepo.insert(newUser);
+        expect(saved).to.be.not.undefined;
+        expect(saved.id).to.not.be.equal(0);
+        expect(saved.id).to.not.be.equal(newUser.id);
+        expect(saved.firstName).to.not.be.null;
+        expect(saved.lastName).to.not.be.null;
+        expect(saved.verifiedAt).to.be.null;
+        expect(saved.lastLoginAt).to.be.null;
+        expect(saved.createdAt).to.not.be.null;
+        expect(saved.updatedAt).to.not.be.null;
+        expect(saved.enabled).to.be.true;
+        expect(saved.roles).to.have.an("array");
+        expect(saved.roles).to.have.length(2);
+    })
+
+    it("should find all users", async () => {
+        for(let i = 0; i < 3; i++){
+            await UserRepo.insert({
+                ...newUser,
+                email: faker.internet.email(),
+                phoneNumber: faker.phone.phoneNumber()
+            } as UserModel)
+        }
+
+        const users = await UserRepo.findAll();
+
+        expect(users).to.not.be.undefined;
+        expect(users).to.be.an("array");
+        expect(users).to.have.length(3);
+        expect(users[0].roles).to.not.be.empty;
+    })
+
+    it("should find user by oauthId", async () => {
+        const oauthId = faker.random.uuid();
+        const saved = await UserRepo.insert({...newUser, oauthId} as UserModel);
+
+        const found = await UserRepo.findByOauthId(oauthId);
         
-//         expect(savedUser).to.not.be.undefined;
-//         expect(savedUser.firstName).to.be.equal(newUser.firstName)
-//         expect(savedUser.lastName).to.be.equal(newUser.lastName);
-//     })
+        expect(found).to.not.be.undefined;
+        expect(found).to.deep.equal(saved);
+    })
 
-//     it("should find users by email", async () => {
-//         const newUser = {...user}
-//         await UserRepo.insert(newUser);
+    it("should find user by email", async () => {
+        const saved = await UserRepo.insert(newUser);
 
-//         const savedUser = await UserRepo.findByEmail(newUser.email);
+        const found = await UserRepo.findByEmail(newUser.email);
 
-//         expect(savedUser).to.not.be.undefined;
-//         expect(savedUser.firstName).to.be.equal(newUser.firstName);
-//         expect(savedUser.lastName).to.be.equal(newUser.lastName);
-//     })
+        expect(found).to.not.be.undefined;
+        expect(found).to.deep.equal(saved);
+    })
 
-//     it("should update user", async () => {
-//         const createdAt = moment().toISOString();
-//         const verifiedAt = moment().toISOString();
-//         const lastLoginAt = moment().subtract(2, "days").toISOString();
+    it("should update user", async () => {
+        const createdAt = moment().subtract(1, "day").toISOString();
+        const verifiedAt = moment().toISOString();
+        const lastLoginAt = moment().subtract(2, "days").toISOString();
         
-//         const savedUser = await UserRepo.insert({...user});
+        const saved = await UserRepo.insert({...newUser, roles: [...newUser.roles.slice(0, 1)]} as UserModel);
 
-//         const updatedUser = await UserRepo.update({
-//             id: savedUser.id,
-//             enabled: false,
-//             createdAt,
-//             verifiedAt,
-//             lastLoginAt
-//         })
+        const updated = await UserRepo.update({
+            id: saved.id,
+            enabled: false,
+            createdAt,
+            verifiedAt,
+            lastLoginAt
+        })
 
 
-//         expect(updatedUser).to.not.be.undefined;
-//         expect(updatedUser.enabled).to.be.false;
-//         expect(moment(updatedUser.verifiedAt).toISOString()).to.be.equal(moment(verifiedAt).toISOString());
-//         expect(moment(updatedUser.lastLoginAt).toISOString()).to.be.equal(moment(lastLoginAt).toISOString());
-//         expect(moment(updatedUser.createdAt).toISOString()).to.be.not.equal(moment(createdAt).toISOString())
-//     })
-// })
+        expect(updated).to.not.be.undefined;
+        expect(updated.enabled).to.be.false;
+        expect(updated.roles).to.not.be.undefined;
+        expect(updated.roles).to.have.an("array");
+        expect(updated.roles).to.have.length(1);
+        expect(moment(updated.verifiedAt).toISOString()).to.be.equal(moment(verifiedAt).toISOString());
+        expect(moment(updated.lastLoginAt).toISOString()).to.be.equal(moment(lastLoginAt).toISOString());
+        expect(moment(updated.createdAt).toISOString()).to.be.not.equal(moment(createdAt).toISOString())
+    })
+})

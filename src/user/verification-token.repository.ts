@@ -1,7 +1,5 @@
 import _ from "lodash";
 import { VerificationTokenModel } from "./verification-token.model";
-import { knex } from "../shared/database";
-import { tableConstants } from "../shared/util/constant.util";
 
 const validFields = [
     "userId",
@@ -11,28 +9,23 @@ const validFields = [
 
 export namespace VerificationTokenRepo{
     export const findById = async (id: number): Promise<VerificationTokenModel> => {
-        return Object.assign(
-            Object.create(VerificationTokenModel.prototype),
-            await knex.select().from(tableConstants.VERIFICATION_TOKENS).where({id}).first()
-        )
+        return VerificationTokenModel.query().findOne({id});
     }
     
     export const findByToken = (token: string): Promise<VerificationTokenModel> => {
-        throw new Error();
+        return VerificationTokenModel.query().findOne({token});
     }
     
     export const findByUserId = (userId: number): Promise<VerificationTokenModel> => {
-        throw new Error();
+        return VerificationTokenModel.query().findOne({userId});
     }
     
     export const insert = async (verificationToken: VerificationTokenModel): Promise<VerificationTokenModel> => {
-        const [id] = await knex.table(tableConstants.VERIFICATION_TOKENS).insert(
-            _.pick(verificationToken, validFields)
-        )
-        return findById(id)
+        return VerificationTokenModel.query().insertAndFetch(_.pick(verificationToken, validFields));
     }
     
-    export const remove = (verificationToken: VerificationTokenModel): Promise<VerificationTokenModel> => {
-        throw new Error();
+    export const remove = async (verificationToken: VerificationTokenModel): Promise<VerificationTokenModel> => {
+        await VerificationTokenModel.query().deleteById(verificationToken.id);
+        return verificationToken;
     }
 }

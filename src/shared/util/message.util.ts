@@ -29,6 +29,8 @@ export namespace MessageUtil {
     export const PERMISSION_DENIED = "You do not have permission to perform this operation. Kindly contact an administrator.";
     export const ROLE_ALREADY_EXISTS = "An role with this name already exists.";
 
+    //SMS UTIL
+    export const INVALID_SMS_MESSAGE_LENGTH = "Sms messages must have between 3 and 161 characters";
 
     //FILE UTIL
     export const INVALID_FILE_NAME = "File name must have an extension";

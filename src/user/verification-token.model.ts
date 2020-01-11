@@ -5,7 +5,7 @@ export class VerificationTokenModel extends Model {
 
     static tableName = tableConstants.VERIFICATION_TOKENS;
 
-    id: number = 0;
+    id!: number;
     userId!: number;
     token!: string;
     expiresOn!: string;

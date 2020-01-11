@@ -1,23 +1,31 @@
-import { ResetPasswordToken } from "./reset-password-token.model";
+import _ from "lodash";
+import { ResetPasswordTokenModel } from "./reset-password-token.model";
+
+const validFields = [
+    "userId",
+    "token",
+    "expiresOn"
+]
 
 export namespace ResetPasswordTokenRepo {
-    export const findById = (id: number): Promise<ResetPasswordToken> => {
-        throw new Error();
+    export const findById = async (id: number): Promise<ResetPasswordTokenModel> => {
+        return ResetPasswordTokenModel.query().findById(id);
     }
     
-    export const findByToken = (token: string): Promise<ResetPasswordToken> => {
-        throw new Error();
+    export const findByToken = async (token: string): Promise<ResetPasswordTokenModel> => {
+        return ResetPasswordTokenModel.query().findOne({token});
     }
     
-    export const findByUserId = (userId: number): Promise<ResetPasswordToken> => {
-        throw new Error();
+    export const findByUserId = async (userId: number): Promise<ResetPasswordTokenModel> => {
+        return ResetPasswordTokenModel.query().findOne({userId});
     }
     
-    export const insert = (verificationToken: ResetPasswordToken): Promise<ResetPasswordToken> => {
-        throw new Error();
+    export const insert = async (resetPasswordToken: ResetPasswordTokenModel): Promise<ResetPasswordTokenModel> => {
+        return ResetPasswordTokenModel.query().insertAndFetch(_.pick(resetPasswordToken, validFields));
     }
     
-    export const remove = (verificationToken: ResetPasswordToken): Promise<void> => {
-        throw new Error();
+    export const remove = async (resetPasswordToken: ResetPasswordTokenModel): Promise<ResetPasswordTokenModel> => {
+        await ResetPasswordTokenModel.query().deleteById(resetPasswordToken.id);
+        return resetPasswordToken;
     }
 }
