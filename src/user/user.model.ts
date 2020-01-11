@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { Model } from "objection";
 import { RoleModel } from "../role/role.model";
 import { Tables } from "../shared/util/constant.util";
@@ -13,7 +14,7 @@ export enum OauthProvider {
 }
 
 
-export class UserModel extends Model{
+export class UserModel extends Model {
 
     static tableName = Tables.USERS;
 
@@ -48,5 +49,19 @@ export class UserModel extends Model{
                 to: `${Tables.ROLES}.id`
             }
         }
+    }
+
+
+    toDTO(): Partial<UserModel> {
+        return _.pick(this, [
+            "id",
+            "oauthId",
+            "oauthProvider",
+            "firstName",
+            "lastName",
+            "gender",
+            "email",
+            "phoneNumber"
+        ])
     }
 }

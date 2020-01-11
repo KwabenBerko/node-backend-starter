@@ -1,5 +1,5 @@
 import moment from "moment";
-import "./db-setup";
+import "../db-setup";
 import { expect } from "../setup";
 import { user, faker, role } from "../data.factory";
 import { UserRepo } from "../../src/user/user.repository";

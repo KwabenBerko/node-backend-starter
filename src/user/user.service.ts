@@ -30,19 +30,12 @@ const findById = async (id: number): Promise<UserModel> => {
     return await UserRepo.findById(id)
 }
 
-const findByIdOrThrow = async (id: number): Promise<UserModel> => {
-    const user = await findById(id);
-    if (!user) {
-        throw new NotFoundError(MessageUtil.USER_NOT_FOUND);
-    }
 
-    return user;
-}
 
 export namespace UserService {
 
     export const register = async (dto: RegisterUserDTO): Promise<UserModel> => {
-        if (!(dto.firstName && dto.lastName && dto.gender && dto.email && dto.phoneNumber && dto.password && dto.confirmPassword)) {
+        if (!(dto && dto.firstName && dto.lastName && dto.gender && dto.email && dto.phoneNumber && dto.password && dto.confirmPassword)) {
             throw new BadRequestError();
         }
 
@@ -203,6 +196,7 @@ export namespace UserService {
 
         const token = await generateUniqueResetPasswordToken();
 
+
         const newResetPasswordToken = new ResetPasswordTokenModel();
         newResetPasswordToken.userId = user.id;
         newResetPasswordToken.token = token;
@@ -324,6 +318,17 @@ export namespace UserService {
         return await UserRepo.update(user);
     }
 
+    // Untested Function!!
+    // TODO: Unit Test This Function
+    export const findByIdOrThrow = async (id: number): Promise<UserModel> => {
+        const user = await findById(id);
+        if (!user) {
+            throw new NotFoundError(MessageUtil.USER_NOT_FOUND);
+        }
+    
+        return user;
+    }
+
     export const getProfile = async (
         data: {
             userId: number,
@@ -335,7 +340,7 @@ export namespace UserService {
             permission: Permissions.READ_USERS,
             user: data.currentUser
         })) {
-            const user = await UserRepo.findById(data.userId);
+            const user = await findByIdOrThrow(data.userId);
             return user;
         }
 

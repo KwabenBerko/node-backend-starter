@@ -67,6 +67,6 @@ export namespace MailerUtil {
         }
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(info);
+        //console.log(info);
     }
 }

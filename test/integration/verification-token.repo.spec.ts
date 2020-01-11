@@ -1,4 +1,4 @@
-import "./db-setup";
+import "../db-setup";
 import {verificationToken, user} from "../data.factory";
 import { VerificationTokenRepo } from "../../src/user/verification-token.repository";
 import { expect } from "../setup";

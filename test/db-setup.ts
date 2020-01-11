@@ -1,4 +1,4 @@
-import { knex } from "../../src/shared/database";
+import { knex } from "../src/shared/database";
 import { Model } from "objection";
 
 before(() => {
