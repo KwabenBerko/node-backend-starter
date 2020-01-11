@@ -1,10 +1,8 @@
-import { sandbox, expect } from "../setup";
-import { faker, user, registerAccountDTO, loginDTO, oauthLoginDTO, resetPasswordDTO, resetPasswordToken, verificationToken, role, permission } from "../data.factory";
+import { sandbox, expect } from "../../setup";
+import { faker, user, registerAccountDTO, loginDTO, oauthLoginDTO, resetPasswordDTO, resetPasswordToken, verificationToken, role, permission } from "../../data.factory";
 import { UserService } from "../../../src/user/user.service";
-import { UserRepo } from "../../../src/user/user.repository";
-import { VerificationTokenRepo } from "../../../src/user/verification-token.repository"
-import { ResetPasswordTokenRepo } from "../../../src/user/reset-password-token.repository"
-import { permissionContants } from "../../../src/shared/util/constant.util";
+import { UserModel } from "../../../src/user/user.model";
+import { Permissions } from "../../../src/shared/util/constant.util";
 import { MessageUtil } from "../../../src/shared/util/message.util";
 import { PasswordHasherUtil } from "../../../src/shared/util/password-hasher.util";
 import { RegisterUserDTO } from "../../../src/user/dto/register-user.dto"
@@ -15,10 +13,15 @@ import { OauthLoginDTO } from "../../../src/user/dto/oauth-login.dto";
 import { NotFoundError } from "../../../src/shared/errors/not-found.error";
 import { ResetPasswordDTO } from "../../../src/user/dto/reset-password.dto";
 import { UnAuthorizedError } from "../../../src/shared/errors/unauthorized.error";
-import { User } from "../../../src/user/user.model";
 import { ForbiddenError } from "../../../src/shared/errors/forbidden.error";
 import { RoleService } from "../../../src/role/role.service";
-
+import { QueryBuilderType } from "objection";
+import { UserRepo } from "../../../src/user/user.repository";
+import { VerificationTokenRepo } from "../../../src/user/verification-token.repository";
+import { ResetPasswordTokenRepo } from "../../../src/user/reset-password-token.repository";
+import { VerificationTokenModel } from "../../../src/user/verification-token.model";
+import { ResetPasswordTokenModel } from "../../../src/user/reset-password-token.model";
+import { RoleModel } from "../../../src/role/role.model";
 
 describe("User Service", () => {
     describe("Register With Email", () => {
@@ -74,28 +77,30 @@ describe("User Service", () => {
 
         it("should throw ConflictError if user already exists", async () => {
 
-            const findByEmailStub = sandbox.stub(UserRepo, "findByEmail").resolves(user)
+            const findOneStub = sandbox.stub(UserRepo, "findByEmail").resolves(user);
 
             await expect(UserService.register(registerAccountDTO)).to.be.eventually.rejectedWith(ConflictError, MessageUtil.USER_ALREADY_EXISTS)
-            expect(findByEmailStub).to.be.calledOnce
+            expect(findOneStub).to.be.calledOnce
         })
 
         it("should successfully create user", async () => {
-            const findByEmailStub = sandbox.stub(UserRepo, "findByEmail").resolves(undefined);
+            const findOneStub = sandbox.stub(UserRepo, "findByEmail").resolves(undefined);
+            const insertStub = sandbox.stub(UserRepo, "insert").resolves(undefined);
+
             const hashPasswordStub = sandbox.stub(PasswordHasherUtil, "hashPassword").resolves(faker.random.uuid())
-            const insertStub = sandbox.stub(UserRepo, "insert").resolves(user)
 
             await expect(UserService.register(registerAccountDTO))
                 .to.be.eventually.fulfilled;
-            expect(findByEmailStub).to.be.calledOnce;
-            expect(hashPasswordStub).to.be.calledOnce;
+            expect(findOneStub).to.be.calledOnce;
             expect(insertStub).to.be.calledOnce;
+            expect(hashPasswordStub).to.be.calledOnce;
         })
 
     })
 
 
     describe("Login With Email", () => {
+
         it("should throw BadRequestError if login DTO object is invalid", async () => {
             const dto: Partial<LoginDTO> = { ...loginDTO, email: undefined };
 
@@ -103,45 +108,46 @@ describe("User Service", () => {
         })
 
         it("should throw UnAuthorizedError if user does not exist", async () => {
-            const findByEmailStub = sandbox.stub(UserRepo, "findByEmail").resolves(undefined);
+            const findOneStub = sandbox.stub(UserRepo, "findByEmail").resolves(undefined);
 
             await expect(UserService.login(loginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
-            expect(findByEmailStub).to.be.calledOnce;
+            expect(findOneStub).to.be.calledOnce;
 
         })
 
 
         it("should throw UnAuthorizedError if credentials is invalid", async () => {
-            const findByEmailStub = sandbox.stub(UserRepo, "findByEmail").resolves(user)
+            const findOneStub = sandbox.stub(UserRepo, "findByEmail").resolves(user);
             const comparePasswordStub = sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(false);
 
             await expect(UserService.login(loginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.INVALID_CREDENTIALS)
-            expect(findByEmailStub).to.be.calledOnce
+            expect(findOneStub).to.be.calledOnce
             expect(comparePasswordStub).to.be.calledOnce
         })
 
         it("should successfully login user", async () => {
-            const findByEmailStub = sandbox.stub(UserRepo, "findByEmail").resolves(user)
-            const comparePasswordStub = sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
+            const findOneStub = sandbox.stub(UserRepo, "findByEmail").resolves(user);
             const updateStub = sandbox.stub(UserRepo, "update").resolves(user);
+
+            const comparePasswordStub = sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
 
             const promise = UserService.login(loginDTO);
             await expect(promise).to.be.eventually.fulfilled;
-            expect(findByEmailStub).to.be.calledOnce;
+            expect(findOneStub).to.be.calledOnce;
             expect(comparePasswordStub).to.be.calledOnce;
             expect(updateStub).to.be.calledOnce;
             expect(await promise).to.be.equal(user);
         })
 
         it("should throw UnAuthorizedError if user is disabled", async () => {
-            sandbox.stub(UserRepo, "findByEmail").resolves({ ...user, enabled: false });
+            sandbox.stub(UserRepo, "findByEmail").resolves({ ...user, enabled: false } as UserModel);
             sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
 
             await expect(UserService.login(loginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.USER_DISABLED)
         })
 
         it("should throw UnAuthorizedError if user has not been verified", async () => {
-            sandbox.stub(UserRepo, "findByEmail").resolves({ ...user, verifiedAt: undefined });
+            sandbox.stub(UserRepo, "findByEmail").resolves({ ...user, verifiedAt: undefined } as UserModel);
             sandbox.stub(PasswordHasherUtil, "comparePassword").resolves(true);
 
             await expect(UserService.login(loginDTO as LoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.USER_NOT_VERIFIED)
@@ -174,80 +180,86 @@ describe("User Service", () => {
         })
 
         it("should create user and login if the oauthId does not exist", async () => {
-            const findByOauthIdStub = sandbox.stub(UserRepo, "findByOauthId").resolves(undefined)
-            const insertStub = sandbox.stub(UserRepo, "insert").resolves(user)
+            const findOneStub = sandbox.stub(UserRepo, "findByOauthId").resolves(undefined);
+            const insertStub = sandbox.stub(UserRepo, "insert").resolves(user);
 
             const promise = UserService.oauthLogin(oauthLoginDTO)
             await expect(promise).to.be.fulfilled
             expect(await promise).to.be.equal(user)
-            expect(findByOauthIdStub).to.be.calledOnce
+            expect(findOneStub).to.be.calledOnce
             expect(insertStub).to.be.calledOnce
         })
 
         it("should login if oauthId already exist", async () => {
-            const findByOauthIdStub = sandbox.stub(UserRepo, "findByOauthId").resolves(user)
-            const updateStub = sandbox.stub(UserRepo, "update").resolves(user)
+            const findOneStub = sandbox.stub(UserRepo, "findByOauthId").resolves(user);
+            const updateStub = sandbox.stub(UserRepo, "update").resolves(user);
             const insertStub = sandbox.stub(UserRepo, "insert").resolves();
-
 
             const promise = UserService.oauthLogin(oauthLoginDTO)
             await expect(promise).to.be.fulfilled
             expect(await promise).to.be.equal(user)
-            expect(findByOauthIdStub).to.be.calledOnce
+            expect(findOneStub).to.be.calledOnce
             expect(updateStub).to.be.calledOnce;
             expect(insertStub).to.not.be.called
         })
 
         it("should throw UnAuthorizedError if user is disabled", async () => {
-            const findByOauthIdStub = sandbox.stub(UserRepo, "findByOauthId").resolves({ ...user, enabled: false });
+            const findOneStub = sandbox.stub(UserRepo, "findByOauthId").resolves({ ...user, enabled: false } as UserModel);
 
             await expect(UserService.oauthLogin(oauthLoginDTO as OauthLoginDTO)).to.be.eventually.rejectedWith(UnAuthorizedError, MessageUtil.USER_DISABLED)
-            expect(findByOauthIdStub).to.be.calledOnce;
+            expect(findOneStub).to.be.calledOnce;
         })
     })
 
     describe("Generate Verification Token", () => {
 
         it("should throw NotFoundError if user is not found", async () => {
-            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(undefined);
+            const findUserByIdStub = sandbox.stub(UserRepo, "findById").resolves(undefined);
 
             await expect(UserService.generateVerificationTokenForUser(1)).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.USER_NOT_FOUND)
-            expect(findUserStub).to.be.calledOnce
+            expect(findUserByIdStub).to.be.calledOnce
         })
 
         it("should throw ConflictError if user is already verified", async () => {
-            const findUserStub = sandbox.stub(UserRepo, "findById").resolves(user);
+            const findByIdStub = sandbox.stub(UserRepo, "findById").resolves(user);
 
             await expect(UserService.generateVerificationTokenForUser(1)).to.be.eventually.rejectedWith(ConflictError, MessageUtil.USER_ALREADY_VERIFIED)
-            expect(findUserStub).to.be.calledOnce
+            expect(findByIdStub).to.be.calledOnce
         })
 
         it("should create a 4 digit verification token ", async () => {
-            sandbox.stub(UserRepo, "findById").resolves({ ...user, verifiedAt: undefined })
-            sandbox.stub(VerificationTokenRepo, "findByUserId").resolves(undefined);
-            sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
-            const addVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "insert").resolves(verificationToken);
+            sandbox.stub(UserRepo, "findById").resolves({ ...user, verifiedAt: undefined } as UserModel);
+            const findByUserIdStub = sandbox.stub(VerificationTokenRepo, "findByUserId").resolves(undefined);
+            const insertStub = sandbox.stub(VerificationTokenRepo, "insert").resolves(verificationToken);
+            const findByTokenStub = sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined)
+
             const createdToken = await UserService.generateVerificationTokenForUser(1);
 
             expect(createdToken.token.length).to.be.equal(4);
-            expect(typeof createdToken.expiresOn).to.be.equal("number");
-            expect(addVerificationTokenStub).to.be.calledOnce;
+            expect(typeof createdToken.expiresOn).to.be.equal("string");
+            expect(findByUserIdStub).to.be.calledOnce;
+            expect(findByTokenStub).to.be.calledOnce;
+            expect(insertStub).to.be.calledOnce;
         })
 
         it("should generate a unique verification token", async () => {
-            sandbox.stub(UserRepo, "findById").resolves({ ...user, verifiedAt: undefined });
-            sandbox.stub(VerificationTokenRepo, "findByUserId").resolves(undefined);
-            sandbox.stub(VerificationTokenRepo, "insert").resolves(verificationToken);
-            const findTokenStub = sandbox.stub(VerificationTokenRepo, "findByToken")
+            sandbox.stub(UserRepo, "findById").resolves({ ...user, verifiedAt: undefined } as UserModel);
+            const findByUserIdStub = sandbox.stub(VerificationTokenRepo, "findByUserId").resolves(undefined);
+            const findByTokenStub = sandbox.stub(VerificationTokenRepo, "findByToken")
                 .onFirstCall().resolves(verificationToken)
-                .onSecondCall().resolves(undefined);
+                .onSecondCall().resolves(verificationToken)
+                .onThirdCall().resolves(undefined);
+
+            const insertStub = sandbox.stub(VerificationTokenRepo, "insert").resolves(verificationToken);
 
             await expect(UserService.generateVerificationTokenForUser(1)).to.be.eventually.fulfilled;
-            expect(findTokenStub).to.be.calledTwice;
+            expect(findByUserIdStub).to.be.calledOnce;
+            expect(findByTokenStub).to.be.calledThrice;
+            expect(insertStub).to.be.calledOnce;
         })
 
         it("should delete any existing verification token record before creating a new one.", async () => {
-            sandbox.stub(UserRepo, "findById").resolves({ ...user, verifiedAt: undefined })
+            sandbox.stub(UserRepo, "findById").resolves({ ...user, verifiedAt: undefined } as UserModel)
             sandbox.stub(VerificationTokenRepo, "findByUserId").resolves(verificationToken)
             sandbox.stub(VerificationTokenRepo, "findByToken").resolves(undefined);
             const removeVerificationTokenStub = sandbox.stub(VerificationTokenRepo, "remove").resolves();
@@ -275,8 +287,8 @@ describe("User Service", () => {
             date.setMinutes(date.getMinutes() - 15)
 
             sandbox.stub(VerificationTokenRepo, "findByToken").resolves({
-                ...verificationToken, expiresOn: date.getTime()
-            });
+                ...verificationToken, expiresOn: date.toISOString()
+            } as VerificationTokenModel);
 
             await expect(UserService.verifyUser(token)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_VERIFICATION_TOKEN);
         })
@@ -286,8 +298,8 @@ describe("User Service", () => {
             date.setMinutes(date.getMinutes() + 20);
 
             sandbox.stub(VerificationTokenRepo, "findByToken").resolves({
-                ...verificationToken, expiresOn: date.getTime()
-            });
+                ...verificationToken, expiresOn: date.toISOString()
+            } as VerificationTokenModel);
 
             const findUserStub = sandbox.stub(UserRepo, "findById").resolves(user);
             const updateUserStub = sandbox.stub(UserRepo, "update").resolves(user);
@@ -318,7 +330,7 @@ describe("User Service", () => {
             const createdToken = await UserService.generateResetPasswordTokenForUser(1);
 
             expect(createdToken.token.length).to.be.equal(4);
-            expect(typeof createdToken.expiresOn).to.be.equal("number");
+            expect(typeof createdToken.expiresOn).to.be.equal("string");
             expect(addResetPasswordTokenStub).to.be.calledOnce;
         })
 
@@ -380,7 +392,7 @@ describe("User Service", () => {
             const date = new Date();
             date.setMinutes(date.getMinutes() - 60);
 
-            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves({ ...resetPasswordToken, expiresOn: date.getTime() });
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves({ ...resetPasswordToken, expiresOn: date.toISOString()} as ResetPasswordTokenModel);
 
             await expect(UserService.resetPassword(resetPasswordDTO as ResetPasswordDTO)).to.be.eventually.rejectedWith(BadRequestError, MessageUtil.INVALID_RESET_PASSWORD_TOKEN);
         })
@@ -389,7 +401,7 @@ describe("User Service", () => {
             const date = new Date();
             date.setMinutes(date.getMinutes() + 15)
 
-            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves({ ...resetPasswordToken, expiresOn: date.getTime() });
+            sandbox.stub(ResetPasswordTokenRepo, "findByToken").resolves({ ...resetPasswordToken, expiresOn: date.toISOString()} as ResetPasswordTokenModel);
 
             const findUserStub = sandbox.stub(UserRepo, "findById").resolves(user);
             const updateUserStub = sandbox.stub(UserRepo, "update").resolves(user);
@@ -404,31 +416,31 @@ describe("User Service", () => {
 
     describe("Find accounts for role", () => {
         it("should return all accounts for the specified role", async () => {
-            const accountOne: User = {
+            const userOne: UserModel = {
                 ...user,
                 roles: [
                     { ...role, id: 5 }
                 ]
-            };
+            } as UserModel;
 
-            const accountTwo: User = {
+            const userTwo: UserModel = {
                 ...user,
                 roles: [
                     { ...role, id: 3 }
                 ]
-            };
+            } as UserModel;
 
-            const accountThree: User = {
+            const accountThree: UserModel = {
                 ...user,
                 roles: [
                     { ...role, id: 5 }
                 ]
-            };
+            } as UserModel;
 
 
-            sandbox.stub(UserRepo, "findAll").resolves([accountOne, accountTwo, accountThree])
+            sandbox.stub(UserRepo, "findAll").resolves([userOne, userTwo, accountThree])
 
-            const promise = UserService.findUsersForRole({ ...role, id: 5 });
+            const promise = UserService.findUsersForRole({ ...role, id: 5 } as RoleModel);
             await expect(promise).to.be.eventually.fulfilled;
             expect(await promise).to.have.length(2);
         })
@@ -439,7 +451,7 @@ describe("User Service", () => {
 
             expect(UserService.hasPermissionTo({
                 permission: "",
-                user: { ...user, roles: [] }
+                user: { ...user, roles: [] } as Partial<UserModel> as UserModel
             })).to.be.false;
 
         })
@@ -447,17 +459,17 @@ describe("User Service", () => {
         it("should return false if user does not have permission", async () => {
 
             expect(UserService.hasPermissionTo({
-                permission: permissionContants.READ_ROLES, 
-                user: { ...user, roles: [role] }
+                permission: Permissions.READ_ROLES,
+                user: { ...user, roles: [role] } as UserModel
             })).to.be.false;
 
         })
 
         it("should return true if user has permission", async () => {
-            const permissionName = permissionContants.READ_ROLES;
+            const permissionName = Permissions.READ_ROLES;
 
             expect(UserService.hasPermissionTo({
-                permission: permissionName, 
+                permission: permissionName,
                 user: {
                     ...user,
                     roles: [
@@ -467,7 +479,7 @@ describe("User Service", () => {
                             ]
                         }
                     ]
-                }
+                } as UserModel
             })).to.be.true;
 
         })
@@ -479,7 +491,7 @@ describe("User Service", () => {
 
             await expect(UserService.getProfile({
                 userId: 12,
-                currentUser: { ...user, id: 3 }
+                currentUser: { ...user, id: 3 } as UserModel
             })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
         })
 
@@ -488,8 +500,8 @@ describe("User Service", () => {
             const findByIdStub = sandbox.stub(UserRepo, "findById").resolves(user)
 
             const promise = UserService.getProfile({
-                userId: userId, 
-                currentUser: { ...user, id: userId }
+                userId: userId,
+                currentUser: { ...user, id: userId } as UserModel
             });
             await expect(promise).to.be.eventually.fulfilled;
 
@@ -502,8 +514,8 @@ describe("User Service", () => {
             sandbox.stub(UserService, "hasPermissionTo").returns(true);
 
             const promise = UserService.getProfile({
-                userId: 12, 
-                currentUser: { ...user, id: 27 }
+                userId: 12,
+                currentUser: { ...user, id: 27 } as UserModel
             });
             await expect(promise).to.be.eventually.fulfilled;
 
@@ -518,7 +530,7 @@ describe("User Service", () => {
 
             await expect(UserService.getProfile({
                 userId: 12,
-                currentUser: { ...user, id: 3 }
+                currentUser: { ...user, id: 3 } as UserModel
             })).to.be.eventually.rejectedWith(ForbiddenError, MessageUtil.PERMISSION_DENIED);
         })
 
@@ -541,7 +553,7 @@ describe("User Service", () => {
 
             await expect(UserService.assignRoleToUser({
                 roleId: 1,
-                userId: 4, 
+                userId: 4,
                 currentUser: user
             })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ROLE_NOT_FOUND);
 
@@ -555,7 +567,7 @@ describe("User Service", () => {
 
             await expect(UserService.assignRoleToUser({
                 roleId: 1,
-                userId: 4, 
+                userId: 4,
                 currentUser: user
             })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.USER_NOT_FOUND);
 
@@ -570,7 +582,7 @@ describe("User Service", () => {
 
             await expect(UserService.assignRoleToUser({
                 roleId: 1,
-                userId: 4, 
+                userId: 4,
                 currentUser: user
             })).to.be.eventually.fulfilled;
 
@@ -595,7 +607,7 @@ describe("User Service", () => {
 
             await expect(UserService.unassignRoleFromUser({
                 roleId: 1,
-                userId: 4, 
+                userId: 4,
                 currentUser: user
             })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.ROLE_NOT_FOUND);
 
@@ -609,7 +621,7 @@ describe("User Service", () => {
 
             await expect(UserService.unassignRoleFromUser({
                 roleId: 1,
-                userId: 4, 
+                userId: 4,
                 currentUser: user
             })).to.be.eventually.rejectedWith(NotFoundError, MessageUtil.USER_NOT_FOUND);
 
@@ -624,7 +636,7 @@ describe("User Service", () => {
 
             await expect(UserService.unassignRoleFromUser({
                 roleId: 1,
-                userId: 4, 
+                userId: 4,
                 currentUser: user
             })).to.be.eventually.fulfilled;
 

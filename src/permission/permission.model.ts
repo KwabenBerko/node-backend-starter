@@ -1,11 +1,10 @@
-export class Permission {
-    id: number;
-    name: string;
+import { Model } from "objection";
+import { Tables } from "../shared/util/constant.util";
 
-    constructor(data: {
-        name: string
-    }){
-        this.id = 0;
-        this.name = data.name
-    }
+export class PermissionModel extends Model{
+
+    static tableName = Tables.PERMISSIONS;
+
+    id!: number;
+    name!: string;
 }

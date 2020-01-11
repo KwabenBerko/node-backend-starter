@@ -1,8 +1,14 @@
 import { PhoneNumberUtil } from "google-libphonenumber";
 
 export namespace ValidationUtil {
-    export const isValidEnum = (enumObject: object, str: string): boolean => {
-        return Object.values(enumObject).some(val => val === str.toLowerCase());
+    export const isValidEnum = (enumObject: any, str: string): boolean => {
+        
+        return Object.values(enumObject).some((val:any) => {
+            if(typeof val == "string"){
+                val = val.toLowerCase();
+            }
+            return val === str.toLowerCase();
+        });
     }
     
     export const isValidEmail = (email: string): boolean => {
@@ -31,5 +37,11 @@ export namespace ValidationUtil {
     
     export const arePasswordsTheSame = (passwordOne: string, passwordTwo: string) => {
         return isValidPassword(passwordOne) && passwordOne === passwordTwo
+    }
+
+    export const isValidSmsMessage = (message: string) => {
+        // The maximum length of text message that you can send is 160 characters
+        // https://www.twilio.com/docs/glossary/what-sms-character-limit
+        return message.length >= 3 && message.length <= 160;
     }
 }

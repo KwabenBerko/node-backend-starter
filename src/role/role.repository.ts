@@ -1,37 +1,40 @@
-import { Role } from "./role.model";
+import _ from "lodash";
+import { RoleModel } from "./role.model";
+import { PermissionModel } from "../permission/permission.model";
 
-export interface Options {
-    from: number,
-    to: number,
-    limit: number,
-    skip: number
-    sort: string, //sort=title:asc
-    include: readonly string[] //include=user,car
-}
+const validFields = [
+    "name",
+    "permissions"
+]
 
 export namespace RoleRepo {
 
-    export const findAll = (): Promise<Role[]> => {
-        throw new Error();
+    export const findAll = async (): Promise<RoleModel[]> => {
+        return await RoleModel.query().withGraphFetched("permissions");
     }
 
-    export const findByName = (name: string): Promise<Role> => {
-        throw new Error();
+    export const findByName = async (name: string): Promise<RoleModel> => {
+        return await RoleModel.query()
+            .withGraphFetched("permissions")
+            .findOne({ name });
     }
 
-    export const findById = (id: number): Promise<Role> => {
-        throw new Error();
+    export const findById = async (id: number): Promise<RoleModel> => {
+        return await RoleModel.query()
+            .withGraphFetched("permissions")
+            .findOne({ id });
     }
 
-    export const insert = (role: Role): Promise<Role> => {
-        throw new Error();
+    export const insert = async (role: RoleModel): Promise<RoleModel> => {
+        return await RoleModel.query().insertGraphAndFetch(_.pick(role, validFields), { relate: true });
     }
 
-    export const update = (role: Role): Promise<Role> => {
-        throw new Error();
+    export const update = async (role: RoleModel): Promise<RoleModel> => {
+        return await RoleModel.query().upsertGraphAndFetch(_.pick(role, validFields), {relate: true});
     }
 
-    export const remove = (role: Role): Promise<Role> => {
-        throw new Error();
+    export const remove = async (role: RoleModel): Promise<RoleModel> => {
+        await RoleModel.query().deleteById(role.id);
+        return role;
     }
 }
